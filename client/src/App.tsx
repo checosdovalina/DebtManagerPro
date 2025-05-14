@@ -22,7 +22,9 @@ function Router() {
   return (
     <Switch>
       {/* Ruta pública para login */}
-      <Route path="/login" component={Login} />
+      <Route path="/login">
+        <Login />
+      </Route>
       
       {/* Rutas protegidas */}
       <Route path="/dashboard">

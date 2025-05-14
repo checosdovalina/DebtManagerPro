@@ -53,43 +53,16 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const loginResult = await login(data.email, data.password);
-      console.log("Login successful:", loginResult);
+      await login(data.email, data.password);
+      console.log("Login successful");
       
       toast({
         title: "Inicio de sesión exitoso",
         description: "Has iniciado sesión correctamente",
       });
       
-      // Hacer una petición explícita para verificar la sesión antes de redirigir
-      try {
-        const sessionCheck = await fetch('/api/auth/session', { 
-          credentials: 'include'
-        });
-        const sessionData = await sessionCheck.json();
-        
-        console.log("Session check:", sessionData);
-        
-        if (sessionData.authenticated) {
-          console.log("Session verified, redirecting to dashboard...");
-          // Redireccionar al dashboard explícitamente con un pequeño retraso
-          setTimeout(() => {
-            window.location.href = '/'; // Usar window.location en lugar de navigate
-          }, 800);
-        } else {
-          console.log("Session not authenticated yet, retrying...");
-          // Si aún no está autenticado, intentar nuevamente después de un retraso
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1500);
-        }
-      } catch (sessionError) {
-        console.error("Error checking session:", sessionError);
-        // Si hay un error, intentar redirigir de todos modos
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
-      }
+      // Redireccionar al dashboard
+      navigate("/");
       
     } catch (error) {
       console.error("Login error:", error);

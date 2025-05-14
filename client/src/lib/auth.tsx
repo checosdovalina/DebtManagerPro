@@ -8,60 +8,33 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    // Verificamos de manera explícita el estado de la sesión
-    const checkSession = async () => {
-      try {
-        const response = await fetch('/api/auth/session', {
-          credentials: 'include'
-        });
-        const sessionData = await response.json();
-        
-        if (!sessionData.authenticated) {
-          console.log("Session check: Not authenticated, redirecting to login");
-          window.location.href = '/login'; // Usar window.location para un reinicio completo
-        } else {
-          console.log("Session check: Authenticated as:", sessionData.user);
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-      }
-    };
-
-    // Solo verificar si no está cargando y parece que no está autenticado
+    // Simple redirect if not authenticated and not loading
     if (!isLoading && !isAuthenticated) {
-      console.log("Running session check...");
-      checkSession();
+      console.log("Not authenticated, redirecting to login");
+      navigate('/login');
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Mostrar un indicador de carga mientras se verifica el estado
+  // Show loading indicator while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Cargando DCS...</span>
+          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Cargando...</span>
         </div>
       </div>
     );
   }
 
-  // Si no está autenticado según el hook, verificamos una vez más antes de bloquear
+  // Only render children if authenticated
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Verificando sesión...</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
-  // Si todo está bien, mostrar el contenido protegido
   return <>{children}</>;
 };

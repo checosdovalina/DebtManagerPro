@@ -32,13 +32,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       secret: "dcs-secret-key-2024",
-      resave: false,
-      saveUninitialized: false,
-      store: new SessionStore({ checkPeriod: 86400000 }), // Prune expired entries every 24h
+      resave: true,
+      saveUninitialized: true,
+      store: new SessionStore({ 
+        checkPeriod: 86400000,  // Prune expired entries every 24h
+        stale: false            // Avoid using stale data
+      }),
       cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        secure: process.env.NODE_ENV === "production",
-        sameSite: 'lax'
+        secure: false,                // Set to false to work in development
+        sameSite: 'lax',
+        httpOnly: true
       }
     })
   );
@@ -122,7 +126,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Authentication result:", { err, user: user ? 'User found' : 'No user', info });
       
       if (err) {
-        return next(err);
+        console.error("Authentication error:", err);
+        return res.status(500).json({ message: "Error de autenticación" });
       }
       
       if (!user) {
@@ -131,26 +136,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       req.login(user, (loginErr) => {
         if (loginErr) {
-          return next(loginErr);
+          console.error("Login error:", loginErr);
+          return res.status(500).json({ message: "Error al iniciar sesión" });
         }
+        
+        console.log("Login successful for user:", user.email);
         
         // Update last login time (async)
         storage.updateUser(user.id, { lastLogin: new Date() });
         
         // Return user without password
         const { password, ...userWithoutPassword } = user;
-        return res.json({ user: userWithoutPassword });
+        return res.json({ 
+          success: true,
+          user: userWithoutPassword,
+          authenticated: true 
+        });
       });
     })(req, res, next);
   });
 
   app.get("/api/auth/session", (req, res) => {
+    console.log("Session check - authenticated:", req.isAuthenticated());
+    
     if (req.isAuthenticated()) {
       const user = req.user as any;
+      console.log("User is authenticated:", user.email);
       const { password, ...userWithoutPassword } = user;
-      res.json({ authenticated: true, user: userWithoutPassword });
+      res.json({ 
+        authenticated: true, 
+        user: userWithoutPassword 
+      });
     } else {
-      res.json({ authenticated: false });
+      console.log("No authenticated session found");
+      res.json({ 
+        authenticated: false 
+      });
     }
   });
   
