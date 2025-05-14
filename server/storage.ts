@@ -9,6 +9,7 @@ import {
   visits, type Visit, type InsertVisit,
   clientReports, type ClientReport, type InsertClientReport,
   clientContacts, type ClientContact, type InsertClientContact,
+  clientBankingInfo, type ClientBankingInfo, type InsertClientBankingInfo,
   USER_ROLES
 } from "@shared/schema";
 
@@ -116,6 +117,7 @@ export class MemStorage implements IStorage {
   private visits: Map<number, Visit>;
   private clientReports: Map<number, ClientReport>;
   private clientContacts: Map<number, ClientContact>;
+  private clientBankingInfos: Map<number, ClientBankingInfo>;
 
   private userIdCounter: number;
   private clientIdCounter: number;
@@ -127,6 +129,7 @@ export class MemStorage implements IStorage {
   private visitIdCounter: number;
   private clientReportIdCounter: number;
   private clientContactIdCounter: number;
+  private clientBankingInfoIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -139,6 +142,7 @@ export class MemStorage implements IStorage {
     this.visits = new Map();
     this.clientReports = new Map();
     this.clientContacts = new Map();
+    this.clientBankingInfos = new Map();
 
     this.userIdCounter = 1;
     this.clientIdCounter = 1;
@@ -150,6 +154,7 @@ export class MemStorage implements IStorage {
     this.visitIdCounter = 1;
     this.clientReportIdCounter = 1;
     this.clientContactIdCounter = 1;
+    this.clientBankingInfoIdCounter = 1;
 
     // Seed data
     this.seedData();
@@ -493,6 +498,37 @@ export class MemStorage implements IStorage {
 
   async deleteClientReport(id: number): Promise<boolean> {
     return this.clientReports.delete(id);
+  }
+
+  // CLIENT BANKING INFO
+  async getClientBankingInfo(clientId: number): Promise<ClientBankingInfo | undefined> {
+    return Array.from(this.clientBankingInfos.values()).find(info => info.clientId === clientId);
+  }
+
+  async createClientBankingInfo(bankingInfo: InsertClientBankingInfo): Promise<ClientBankingInfo> {
+    const id = this.clientBankingInfoIdCounter++;
+    const now = new Date();
+    const newBankingInfo: ClientBankingInfo = { 
+      ...bankingInfo, 
+      id, 
+      createdAt: now,
+      updatedAt: now
+    };
+    this.clientBankingInfos.set(id, newBankingInfo);
+    return newBankingInfo;
+  }
+
+  async updateClientBankingInfo(clientId: number, bankingInfoData: Partial<ClientBankingInfo>): Promise<ClientBankingInfo | undefined> {
+    const bankingInfo = Array.from(this.clientBankingInfos.values()).find(info => info.clientId === clientId);
+    if (!bankingInfo) return undefined;
+    
+    const updatedBankingInfo = { 
+      ...bankingInfo, 
+      ...bankingInfoData,
+      updatedAt: new Date()
+    };
+    this.clientBankingInfos.set(bankingInfo.id, updatedBankingInfo);
+    return updatedBankingInfo;
   }
 
   // DASHBOARD DATA
