@@ -18,6 +18,7 @@ import {
   insertVisitSchema,
   insertClientReportSchema,
   insertClientContactSchema,
+  insertClientBankingInfoSchema,
   USER_ROLES
 } from "@shared/schema";
 
@@ -413,6 +414,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       res.status(500).json({ message: "Error creating contact" });
+    }
+  });
+  
+  // Client Banking Info Routes
+  app.get("/api/clients/:clientId/banking-info", isAuthenticated, async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const bankingInfo = await storage.getClientBankingInfo(clientId);
+      
+      if (!bankingInfo) {
+        return res.status(404).json({ message: "Información bancaria no encontrada" });
+      }
+      
+      res.json(bankingInfo);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener información bancaria" });
+    }
+  });
+  
+  app.post("/api/clients/:clientId/banking-info", isAuthenticated, hasRole([USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.ACCOUNTING]), async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Cliente no encontrado" });
+      }
+      
+      // Check if banking info already exists for this client
+      const existingInfo = await storage.getClientBankingInfo(clientId);
+      if (existingInfo) {
+        return res.status(400).json({ message: "La información bancaria ya existe para este cliente" });
+      }
+      
+      const bankingData = { ...req.body, clientId };
+      const validatedData = insertClientBankingInfoSchema.parse(bankingData);
+      const bankingInfo = await storage.createClientBankingInfo(validatedData);
+      res.status(201).json(bankingInfo);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error al crear información bancaria" });
+    }
+  });
+  
+  app.put("/api/clients/:clientId/banking-info", isAuthenticated, hasRole([USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN, USER_ROLES.ACCOUNTING]), async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      
+      // Check if banking info exists
+      const existingInfo = await storage.getClientBankingInfo(clientId);
+      if (!existingInfo) {
+        return res.status(404).json({ message: "Información bancaria no encontrada" });
+      }
+      
+      const updatedBankingInfo = await storage.updateClientBankingInfo(clientId, req.body);
+      
+      if (!updatedBankingInfo) {
+        return res.status(404).json({ message: "Información bancaria no encontrada" });
+      }
+      
+      res.json(updatedBankingInfo);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar información bancaria" });
     }
   });
 
