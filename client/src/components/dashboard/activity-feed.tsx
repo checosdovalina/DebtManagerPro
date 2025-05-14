@@ -122,14 +122,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
                     </div>
                     <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                       <div>
-                        <p className="text-sm text-gray-500">
+                        <div className="text-sm text-gray-500">
                           {getActivityDescription(activity)}{" "}
                           <Link href={`/debtors/${activity.debtor.id}`}>
-                            <div className="font-medium text-gray-900 hover:text-primary-600 cursor-pointer">
+                            <span className="font-medium text-gray-900 hover:text-primary-600 cursor-pointer">
                               {activity.result}
-                            </div>
+                            </span>
                           </Link>
-                        </p>
+                        </div>
                       </div>
                       <div className="text-right text-sm whitespace-nowrap text-gray-500">
                         {getTimeAgo(activity.createdAt)}
