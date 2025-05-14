@@ -165,6 +165,7 @@ export class MemStorage implements IStorage {
     this.clientReportIdCounter = 1;
     this.clientContactIdCounter = 1;
     this.clientBankingInfoIdCounter = 1;
+    this.paymentIdCounter = 1;
 
     // Seed data
     this.seedData();
@@ -539,6 +540,52 @@ export class MemStorage implements IStorage {
     };
     this.clientBankingInfos.set(bankingInfo.id, updatedBankingInfo);
     return updatedBankingInfo;
+  }
+
+  // PAYMENTS
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const id = this.paymentIdCounter++;
+    const now = new Date();
+    const newPayment: Payment = {
+      ...payment,
+      id,
+      createdAt: now,
+      receiptNumber: payment.receiptNumber || null,
+      notes: payment.notes || null,
+      transactionId: payment.transactionId || null
+    };
+    this.payments.set(id, newPayment);
+    return newPayment;
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    return this.payments.get(id);
+  }
+
+  async getPaymentsByDebtId(debtId: number): Promise<Payment[]> {
+    const result: Payment[] = [];
+    for (const payment of this.payments.values()) {
+      if (payment.debtId === debtId) {
+        result.push(payment);
+      }
+    }
+    return result;
+  }
+
+  async updateDebtAmountAfterPayment(debtId: number, newAmount: number): Promise<Debt | undefined> {
+    const debt = this.debts.get(debtId);
+    if (!debt) {
+      return undefined;
+    }
+    
+    const updatedDebt: Debt = {
+      ...debt,
+      currentAmount: newAmount,
+      updatedAt: new Date()
+    };
+    
+    this.debts.set(debtId, updatedDebt);
+    return updatedDebt;
   }
 
   // DASHBOARD DATA
@@ -1248,6 +1295,63 @@ export class DatabaseStorage implements IStorage {
       return bankingInfo;
     } catch (error) {
       console.error("Error updating client banking info:", error);
+      return undefined;
+    }
+  }
+
+  // Payment methods
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    try {
+      const [newPayment] = await db
+        .insert(payments)
+        .values(payment)
+        .returning();
+      return newPayment;
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      throw error;
+    }
+  }
+
+  async getPayment(id: number): Promise<Payment | undefined> {
+    try {
+      const [payment] = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.id, id));
+      return payment;
+    } catch (error) {
+      console.error("Error getting payment:", error);
+      return undefined;
+    }
+  }
+
+  async getPaymentsByDebtId(debtId: number): Promise<Payment[]> {
+    try {
+      const paymentsList = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.debtId, debtId));
+      return paymentsList;
+    } catch (error) {
+      console.error("Error getting payments by debt ID:", error);
+      return [];
+    }
+  }
+
+  async updateDebtAmountAfterPayment(debtId: number, newAmount: number): Promise<Debt | undefined> {
+    try {
+      const [debt] = await db
+        .update(debts)
+        .set({ 
+          currentAmount: newAmount,
+          updatedAt: new Date()
+        })
+        .where(eq(debts.id, debtId))
+        .returning();
+      return debt;
+    } catch (error) {
+      console.error("Error updating debt amount after payment:", error);
       return undefined;
     }
   }
