@@ -990,45 +990,79 @@ export class MemStorage implements IStorage {
   }
   
   async getScheduledActivities(startDate: string, endDate: string): Promise<any[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // Get visits in date range
-    const visits = Object.values(this.visitsMap).filter(visit => {
-      const visitDate = new Date(visit.date);
-      return visitDate >= start && visitDate <= end;
-    });
-    
-    // Get activity logs with next actions in date range
-    const activities = Object.values(this.activityLogsMap).filter(log => {
-      if (!log.nextActionDate) return false;
-      const nextActionDate = new Date(log.nextActionDate);
-      return nextActionDate >= start && nextActionDate <= end;
-    });
-    
-    // Transform to calendar events
-    const calendarEvents = [
-      ...visits.map(visit => ({
-        id: `visit-${visit.id}`,
-        title: `Visita a deudor ID: ${visit.debtorId}`,
-        date: visit.date,
-        time: visit.time,
-        type: 'visit',
-        entityId: visit.debtorId,
-        entityType: 'debtor'
-      })),
-      ...activities.map(activity => ({
-        id: `activity-${activity.id}`,
-        title: `Seguimiento: ${activity.nextAction || 'Actividad programada'}`,
-        date: activity.nextActionDate,
-        time: activity.time,
-        type: 'follow-up',
-        entityId: activity.debtorId,
-        entityType: 'debtor'
-      }))
-    ];
-    
-    return calendarEvents;
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      // Get visits in date range
+      let visits;
+      if (this.visits && Array.isArray(this.visits)) {
+        // For MemStorage
+        visits = this.visits.filter(visit => {
+          const visitDate = new Date(visit.date);
+          return visitDate >= start && visitDate <= end;
+        });
+      } else {
+        // For DatabaseStorage
+        visits = await db.select().from(visits)
+          .where(
+            and(
+              gte(sql`DATE(${visits.date})`, startDate),
+              lte(sql`DATE(${visits.date})`, endDate)
+            )
+          )
+          .orderBy(asc(visits.date));
+      }
+      
+      // Get activity logs with next actions in date range
+      let activities;
+      if (this.activityLogs && Array.isArray(this.activityLogs)) {
+        // For MemStorage
+        activities = this.activityLogs.filter(log => {
+          if (!log.nextActionDate) return false;
+          const nextActionDate = new Date(log.nextActionDate);
+          return nextActionDate >= start && nextActionDate <= end;
+        });
+      } else {
+        // For DatabaseStorage
+        activities = await db.select().from(activityLogs)
+          .where(
+            and(
+              isNotNull(activityLogs.nextActionDate),
+              gte(sql`DATE(${activityLogs.nextActionDate})`, startDate),
+              lte(sql`DATE(${activityLogs.nextActionDate})`, endDate)
+            )
+          )
+          .orderBy(asc(activityLogs.nextActionDate));
+      }
+      
+      // Transform to calendar events
+      const calendarEvents = [
+        ...(visits || []).map(visit => ({
+          id: `visit-${visit.id}`,
+          title: `Visita a deudor ID: ${visit.debtorId}`,
+          date: visit.date,
+          time: visit.time,
+          type: 'visit',
+          entityId: visit.debtorId,
+          entityType: 'debtor'
+        })),
+        ...(activities || []).map(activity => ({
+          id: `activity-${activity.id}`,
+          title: `Seguimiento: ${activity.nextAction || 'Actividad programada'}`,
+          date: activity.nextActionDate,
+          time: activity.time,
+          type: 'follow-up',
+          entityId: activity.debtorId,
+          entityType: 'debtor'
+        }))
+      ];
+      
+      return calendarEvents;
+    } catch (error) {
+      console.error("Error fetching scheduled activities:", error);
+      return [];
+    }
   }
   
   async getClientReports(options: {
