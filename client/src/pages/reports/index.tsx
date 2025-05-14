@@ -17,13 +17,13 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ReportsPage() {
   return (
-    <Layout title="Gestión y Seguimiento">
+    <Layout title="Reportes">
       {/* Page title and actions */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión y Seguimiento</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Monitorea las actividades y genera reportes para clientes
+            Analiza actividades y genera reportes para clientes
           </p>
         </div>
 
@@ -40,29 +40,29 @@ export default function ReportsPage() {
       </div>
 
       {/* Tabs for different report sections */}
-      <Tabs defaultValue="actividades" className="space-y-6">
-        <TabsList className="bg-gray-100 p-1">
-          <TabsTrigger value="actividades" className="data-[state=active]:bg-white">
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Actividades
-          </TabsTrigger>
-          <TabsTrigger value="reportes" className="data-[state=active]:bg-white">
-            <FileText className="h-4 w-4 mr-2" />
-            Reportes a Clientes
-          </TabsTrigger>
-          <TabsTrigger value="calendario" className="data-[state=active]:bg-white">
-            <Calendar className="h-4 w-4 mr-2" />
-            Calendario
-          </TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>Informes y Análisis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="actividades" className="space-y-6">
+            <TabsList className="bg-gray-100 p-1">
+              <TabsTrigger value="actividades" className="data-[state=active]:bg-white">
+                <ClipboardList className="h-4 w-4 mr-2" />
+                Actividades
+              </TabsTrigger>
+              <TabsTrigger value="reportes" className="data-[state=active]:bg-white">
+                <FileText className="h-4 w-4 mr-2" />
+                Reportes a Clientes
+              </TabsTrigger>
+              <TabsTrigger value="calendario" className="data-[state=active]:bg-white">
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendario
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Activities Tab */}
-        <TabsContent value="actividades">
-          <Card>
-            <CardHeader>
-              <CardTitle>Actividades Recientes</CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* Activities Tab */}
+            <TabsContent value="actividades">
               <div className="space-y-6">
                 {/* Activity items */}
                 <div className="relative pl-6 border-l-2 border-gray-200 pb-6">
@@ -135,17 +135,10 @@ export default function ReportsPage() {
               <div className="mt-6 flex justify-center">
                 <Button variant="outline">Cargar más actividades</Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        {/* Client Reports Tab */}
-        <TabsContent value="reportes">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reportes a Clientes</CardTitle>
-            </CardHeader>
-            <CardContent>
+            {/* Client Reports Tab */}
+            <TabsContent value="reportes">
               <div className="space-y-4">
                 <div className="bg-white border rounded-lg p-4">
                   <div className="flex justify-between items-start">
@@ -231,28 +224,23 @@ export default function ReportsPage() {
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        {/* Calendar Tab */}
-        <TabsContent value="calendario">
-          <Card>
-            <CardHeader>
-              <CardTitle>Calendario de Actividades</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[500px] flex items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded-md">
-              <div className="text-center">
-                <Calendar className="h-12 w-12 mx-auto text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Calendario en desarrollo</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  El calendario de actividades estará disponible en la próxima versión.
-                </p>
+            {/* Calendar Tab */}
+            <TabsContent value="calendario">
+              <div className="h-[500px] flex items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded-md">
+                <div className="text-center">
+                  <Calendar className="h-12 w-12 mx-auto text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Calendario en desarrollo</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    El calendario de actividades estará disponible en la próxima versión.
+                  </p>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </Layout>
   );
 }
