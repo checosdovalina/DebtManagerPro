@@ -99,7 +99,7 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
       assignedUserId: initialData?.assignedUserId || undefined,
       status: initialData?.status || DEBTOR_STATUS.NEW,
       notes: initialData?.notes || "",
-    },
+    } as DebtorFormSchema,
   });
 
   const createMutation = useMutation({
