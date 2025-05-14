@@ -15,7 +15,7 @@ import { DebtorStatus } from "@shared/schema";
 interface DebtorFilterProps {
   onFilterChange: (filters: {
     searchQuery: string;
-    status: DebtorStatus | "";
+    status: DebtorStatus | "all";
     clientId: number | null;
   }) => void;
   clients?: { id: number; name: string }[];
@@ -26,7 +26,7 @@ export const DebtorFilter: React.FC<DebtorFilterProps> = ({
   clients = [] 
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [status, setStatus] = useState<DebtorStatus | "">("");
+  const [status, setStatus] = useState<DebtorStatus | "all">("all");
   const [clientId, setClientId] = useState<number | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,11 +40,11 @@ export const DebtorFilter: React.FC<DebtorFilterProps> = ({
 
   const handleReset = () => {
     setSearchQuery("");
-    setStatus("");
+    setStatus("all");
     setClientId(null);
     onFilterChange({
       searchQuery: "",
-      status: "",
+      status: "all",
       clientId: null
     });
   };
@@ -80,7 +80,7 @@ export const DebtorFilter: React.FC<DebtorFilterProps> = ({
               </label>
               <Select 
                 value={status} 
-                onValueChange={(value) => setStatus(value as DebtorStatus | "")}
+                onValueChange={(value) => setStatus(value as DebtorStatus | "all")}
               >
                 <SelectTrigger id="filter-estado">
                   <SelectValue placeholder="Todos" />

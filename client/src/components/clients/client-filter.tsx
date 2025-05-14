@@ -15,7 +15,7 @@ import { ClientStatus } from "@shared/schema";
 interface ClientFilterProps {
   onFilterChange: (filters: {
     searchQuery: string;
-    status: ClientStatus | "";
+    status: ClientStatus | "all";
     executiveId: number | null;
   }) => void;
   executives?: { id: number; fullName: string }[];
@@ -40,11 +40,11 @@ export const ClientFilter: React.FC<ClientFilterProps> = ({
 
   const handleReset = () => {
     setSearchQuery("");
-    setStatus("");
+    setStatus("all");
     setExecutiveId(null);
     onFilterChange({
       searchQuery: "",
-      status: "",
+      status: "all",
       executiveId: null
     });
   };
@@ -80,7 +80,7 @@ export const ClientFilter: React.FC<ClientFilterProps> = ({
               </label>
               <Select 
                 value={status} 
-                onValueChange={(value) => setStatus(value as ClientStatus | "")}
+                onValueChange={(value) => setStatus(value as ClientStatus | "all")}
               >
                 <SelectTrigger id="filter-estado">
                   <SelectValue placeholder="Todos" />
