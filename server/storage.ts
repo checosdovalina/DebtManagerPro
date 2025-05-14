@@ -1200,6 +1200,47 @@ export class DatabaseStorage implements IStorage {
     await db.delete(clientReports).where(eq(clientReports.id, id));
     return true;
   }
+  
+  // Client Banking Info
+  async getClientBankingInfo(clientId: number): Promise<ClientBankingInfo | undefined> {
+    try {
+      const [bankingInfo] = await db
+        .select()
+        .from(clientBankingInfo)
+        .where(eq(clientBankingInfo.clientId, clientId));
+      return bankingInfo;
+    } catch (error) {
+      console.error("Error fetching client banking info:", error);
+      return undefined;
+    }
+  }
+
+  async createClientBankingInfo(info: InsertClientBankingInfo): Promise<ClientBankingInfo> {
+    try {
+      const [bankingInfo] = await db
+        .insert(clientBankingInfo)
+        .values(info)
+        .returning();
+      return bankingInfo;
+    } catch (error) {
+      console.error("Error creating client banking info:", error);
+      throw error;
+    }
+  }
+
+  async updateClientBankingInfo(clientId: number, info: Partial<ClientBankingInfo>): Promise<ClientBankingInfo | undefined> {
+    try {
+      const [bankingInfo] = await db
+        .update(clientBankingInfo)
+        .set({ ...info, updatedAt: new Date() })
+        .where(eq(clientBankingInfo.clientId, clientId))
+        .returning();
+      return bankingInfo;
+    } catch (error) {
+      console.error("Error updating client banking info:", error);
+      return undefined;
+    }
+  }
 
   // Dashboard Data
   async getDashboardStats(): Promise<{
