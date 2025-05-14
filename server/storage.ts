@@ -88,6 +88,11 @@ export interface IStorage {
   createClientReport(report: InsertClientReport): Promise<ClientReport>;
   updateClientReport(id: number, report: Partial<ClientReport>): Promise<ClientReport | undefined>;
   deleteClientReport(id: number): Promise<boolean>;
+  
+  // Client Banking Info
+  getClientBankingInfo(clientId: number): Promise<ClientBankingInfo | undefined>;
+  createClientBankingInfo(bankingInfo: InsertClientBankingInfo): Promise<ClientBankingInfo>;
+  updateClientBankingInfo(clientId: number, bankingInfo: Partial<ClientBankingInfo>): Promise<ClientBankingInfo | undefined>;
 
   // Dashboard Data
   getDashboardStats(): Promise<{
