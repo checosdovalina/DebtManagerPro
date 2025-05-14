@@ -98,13 +98,9 @@ export const Sidebar: React.FC = () => {
         <div className="p-4 flex items-center justify-between border-b border-gray-700">
           <div className="flex items-center">
             <img 
-              src="/logo-white.png" 
+              src="/logo.png" 
               alt="DCS Logo" 
               className="h-8 mr-2" 
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = "/logo.png";
-              }}
             />
             <h1 className="text-xl font-bold">DCS</h1>
           </div>
