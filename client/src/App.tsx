@@ -21,9 +21,17 @@ import { ProtectedRoute } from "./lib/auth";
 function Router() {
   return (
     <Switch>
-      {/* Ruta pública para login */}
+      {/* Rutas públicas */}
       <Route path="/login">
         <Login />
+      </Route>
+      
+      {/* Ruta pública para redirigir a login para facilitar el manejo de URL */}
+      <Route path="/redirect-to-login">
+        {() => {
+          window.location.href = '/login';
+          return null;
+        }}
       </Route>
       
       {/* Rutas protegidas */}

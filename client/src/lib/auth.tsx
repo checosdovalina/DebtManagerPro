@@ -12,10 +12,28 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    // Simple redirect if not authenticated and not loading
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (!data.authenticated) {
+          console.log("Session check: Not authenticated");
+          window.location.href = '/login';
+        } else {
+          console.log("Session check: Is authenticated");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        window.location.href = '/login';
+      }
+    };
+
     if (!isLoading && !isAuthenticated) {
-      console.log("Not authenticated, redirecting to login");
-      navigate('/login');
+      console.log("Not authenticated in hook, checking server session");
+      checkSession();
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -25,7 +43,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Cargando...</span>
+          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Verificando sesión...</span>
         </div>
       </div>
     );
@@ -33,7 +51,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // Only render children if authenticated
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Verificando sesión...</span>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

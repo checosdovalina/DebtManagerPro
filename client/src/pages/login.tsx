@@ -53,16 +53,33 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(data.email, data.password);
-      console.log("Login successful");
+      // Realizar petición directa en lugar de usar el hook
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password
+        }),
+        credentials: 'include' // Importante para cookies
+      });
+      
+      if (!response.ok) {
+        throw new Error('Credenciales inválidas');
+      }
+      
+      const result = await response.json();
+      console.log("Login successful:", result);
       
       toast({
         title: "Inicio de sesión exitoso",
         description: "Has iniciado sesión correctamente",
       });
       
-      // Redireccionar al dashboard
-      navigate("/");
+      // Redireccionar al dashboard usando window.location
+      window.location.href = '/dashboard';
       
     } catch (error) {
       console.error("Login error:", error);
