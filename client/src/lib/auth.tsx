@@ -8,20 +8,26 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [, navigate] = useLocation();
 
   useEffect(() => {
+    // Solo redireccionar si no está cargando y no está autenticado
     if (!isLoading && !isAuthenticated) {
+      console.log("Not authenticated, redirecting to login");
       navigate('/login');
+    } else if (!isLoading && isAuthenticated) {
+      console.log("Authenticated as:", user);
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, user]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-xl font-medium text-gray-800">Cargando...</span>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 mt-2 text-xl font-medium text-gray-800">Cargando...</span>
+        </div>
       </div>
     );
   }

@@ -23,12 +23,6 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       
-      <Route path="/">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      </Route>
-      
       <Route path="/clients">
         <ProtectedRoute>
           <ClientsPage />
@@ -98,6 +92,12 @@ function Router() {
       <Route path="/management">
         <ProtectedRoute>
           <ManagementPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/">
+        <ProtectedRoute>
+          <Dashboard />
         </ProtectedRoute>
       </Route>
       

@@ -53,13 +53,20 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      await login(data.email, data.password);
+      const loginResult = await login(data.email, data.password);
+      console.log("Login successful:", loginResult);
       
       toast({
         title: "Inicio de sesión exitoso",
         description: "Has iniciado sesión correctamente",
       });
-      navigate("/");
+      
+      // Pequeño retraso para asegurarse de que el estado de autenticación se actualice
+      setTimeout(() => {
+        navigate("/");
+        console.log("Redirecting to dashboard...");
+      }, 500);
+      
     } catch (error) {
       console.error("Login error:", error);
       setLoginError("Credenciales inválidas. Por favor, intente de nuevo.");
