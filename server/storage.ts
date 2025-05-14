@@ -550,9 +550,9 @@ export class MemStorage implements IStorage {
       ...payment,
       id,
       createdAt: now,
-      receiptNumber: payment.receiptNumber || null,
+      receiptUrl: payment.receiptUrl || null,
       notes: payment.notes || null,
-      transactionId: payment.transactionId || null
+      reference: payment.reference || null
     };
     this.payments.set(id, newPayment);
     return newPayment;
