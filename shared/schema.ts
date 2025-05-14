@@ -140,6 +140,7 @@ export const debtors = pgTable("debtors", {
 export const debts = pgTable("debts", {
   id: serial("id").primaryKey(),
   debtorId: integer("debtor_id").notNull().references(() => debtors.id),
+  concept: text("concept").notNull(),
   originalAmount: real("original_amount").notNull(),
   currentAmount: real("current_amount").notNull(),
   startDate: date("start_date").notNull(),

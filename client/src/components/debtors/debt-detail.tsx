@@ -49,6 +49,7 @@ import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const debtFormSchema = z.object({
+  concept: z.string().nonempty("El concepto del adeudo es requerido"),
   originalAmount: z.coerce.number().positive("El monto debe ser mayor a cero"),
   currentAmount: z.coerce.number().positive("El monto debe ser mayor a cero"),
   startDate: z.string().nonempty("La fecha de inicio es requerida"),
@@ -77,6 +78,7 @@ export const DebtDetail: React.FC<DebtDetailProps> = ({ debtorId }) => {
   const form = useForm<DebtFormType>({
     resolver: zodResolver(debtFormSchema),
     defaultValues: {
+      concept: "",
       originalAmount: 0,
       currentAmount: 0,
       startDate: format(new Date(), "yyyy-MM-dd"),
@@ -163,6 +165,20 @@ export const DebtDetail: React.FC<DebtDetailProps> = ({ debtorId }) => {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="concept"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Concepto del Adeudo</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Descripción breve del adeudo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -391,6 +407,9 @@ export const DebtDetail: React.FC<DebtDetailProps> = ({ debtorId }) => {
                           </span>
                         )}
                       </div>
+                      <p className="text-sm font-medium text-gray-700">
+                        {debt.concept}
+                      </p>
                       <p className="text-sm text-gray-500">
                         Fecha de inicio: {format(new Date(debt.startDate), "dd/MM/yyyy", { locale: es })} |  
                         Fecha de vencimiento: {format(new Date(debt.dueDate), "dd/MM/yyyy", { locale: es })}
