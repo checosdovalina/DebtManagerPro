@@ -18,9 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/common/avatar";
 import { Breadcrumb } from "@/components/common/breadcrumb";
 import { Client, ClientContact } from "@shared/schema";
-import { Printer, PencilLine, Users, FileText, Clock, PlusCircle } from "lucide-react";
+import { Printer, PencilLine, Users, FileText, Clock, PlusCircle, CreditCard } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DebtorList } from "@/components/debtors/debtor-list";
+import { BankingInfoTab } from "./banking-info-tab";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -152,6 +153,12 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId }) => {
                   className="rounded-none border-b-2 border-transparent px-4 py-3 hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none"
                 >
                   Documentos
+                </TabsTrigger>
+                <TabsTrigger
+                  value="info-bancaria"
+                  className="rounded-none border-b-2 border-transparent px-4 py-3 hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none"
+                >
+                  Info. Bancaria
                 </TabsTrigger>
                 <TabsTrigger
                   value="historial"
@@ -356,6 +363,10 @@ export const ClientDetail: React.FC<ClientDetailProps> = ({ clientId }) => {
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="info-bancaria" className="p-6">
+            <BankingInfoTab clientId={clientId} />
           </TabsContent>
           
           <TabsContent value="historial" className="p-6">
