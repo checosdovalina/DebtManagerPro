@@ -5,6 +5,7 @@ import { ClientForm } from "@/components/clients/client-form";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Breadcrumb } from "@/components/ui/breadcrumb-nav";
+import type { Client } from "@shared/schema";
 
 interface ClientEditPageProps {
   id: number;
@@ -13,7 +14,7 @@ interface ClientEditPageProps {
 export default function ClientEditPage({ id }: ClientEditPageProps) {
   const [, navigate] = useLocation();
   
-  const { data: client, isLoading } = useQuery({
+  const { data: client, isLoading } = useQuery<Client>({
     queryKey: [`/api/clients/${id}`],
   });
 
@@ -42,7 +43,7 @@ export default function ClientEditPage({ id }: ClientEditPageProps) {
   }
 
   return (
-    <Layout title={`Editar: ${client?.name}`}>
+    <Layout title={`Editar: ${client.name}`}>
       <div className="space-y-6">
         <Breadcrumb 
           items={[
@@ -56,8 +57,7 @@ export default function ClientEditPage({ id }: ClientEditPageProps) {
         <div className="bg-white rounded-lg shadow p-6">
           <h1 className="text-2xl font-bold mb-6">Editar Cliente</h1>
           <ClientForm 
-            initialData={client} 
-            isEditing={true} 
+            initialData={client}
             onSuccess={() => {
               navigate(`/clients/${id}`);
             }}
