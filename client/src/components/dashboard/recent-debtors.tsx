@@ -1,11 +1,12 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar } from "@/components/common/avatar";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { formatCurrency } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Debtor } from "@shared/schema";
+import { ArrowRight } from "lucide-react";
 
 interface RecentDebtorsProps {
   debtors: (Debtor & { 
@@ -15,6 +16,16 @@ interface RecentDebtorsProps {
 }
 
 export const RecentDebtors: React.FC<RecentDebtorsProps> = ({ debtors }) => {
+  const [, navigate] = useLocation();
+
+  const handleViewAllClick = () => {
+    navigate("/debtors");
+  };
+
+  const handleDebtorClick = (debtorId: number) => {
+    navigate(`/debtors/${debtorId}`);
+  };
+
   return (
     <Card>
       <CardHeader className="border-b border-gray-200">
@@ -25,7 +36,11 @@ export const RecentDebtors: React.FC<RecentDebtorsProps> = ({ debtors }) => {
       <CardContent className="px-0 py-0 overflow-hidden">
         <ul className="divide-y divide-gray-200">
           {debtors.map((debtor) => (
-            <li key={debtor.id} className="px-6 py-4">
+            <li 
+              key={debtor.id} 
+              className="px-6 py-4 cursor-pointer hover:bg-gray-50"
+              onClick={() => handleDebtorClick(debtor.id)}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Avatar name={debtor.name} personType={debtor.personType} />
@@ -52,11 +67,13 @@ export const RecentDebtors: React.FC<RecentDebtorsProps> = ({ debtors }) => {
         </ul>
       </CardContent>
       <CardFooter className="px-6 py-4 border-t border-gray-200">
-        <Link href="/debtors">
-          <div className="text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer">
-            Ver todos los deudores →
-          </div>
-        </Link>
+        <button 
+          onClick={handleViewAllClick}
+          className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer"
+        >
+          Ver todos los deudores 
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </button>
       </CardFooter>
     </Card>
   );

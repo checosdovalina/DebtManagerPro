@@ -1,17 +1,17 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { 
   UserPlus, 
   DollarSign, 
   FileText, 
   Phone, 
   Gavel,
-  Circle
+  Circle,
+  ArrowRight
 } from "lucide-react";
 import { ContactType, ActivityLog } from "@shared/schema";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface EnhancedActivityLog extends ActivityLog {
@@ -32,6 +32,8 @@ interface ActivityFeedProps {
 }
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
+  const [, navigate] = useLocation();
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "client_created":
@@ -93,6 +95,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
     });
   };
 
+  const handleActivityClick = (debtorId: number) => {
+    navigate(`/debtors/${debtorId}`);
+  };
+
+  const handleViewAllClick = () => {
+    navigate("/reports");
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2 border-b border-gray-200">
@@ -121,15 +131,14 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
                       </span>
                     </div>
                     <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <div className="text-sm text-gray-500">
-                          {getActivityDescription(activity)}{" "}
-                          <Link href={`/debtors/${activity.debtor.id}`}>
-                            <span className="font-medium text-gray-900 hover:text-primary-600 cursor-pointer">
-                              {activity.result}
-                            </span>
-                          </Link>
-                        </div>
+                      <div className="text-sm text-gray-500">
+                        {getActivityDescription(activity)}{" "}
+                        <button 
+                          onClick={() => handleActivityClick(activity.debtor.id)}
+                          className="inline-block font-medium text-gray-900 hover:text-primary-600 cursor-pointer"
+                        >
+                          {activity.result}
+                        </button>
                       </div>
                       <div className="text-right text-sm whitespace-nowrap text-gray-500">
                         {getTimeAgo(activity.createdAt)}
@@ -143,11 +152,13 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
         </div>
       </CardContent>
       <CardFooter className="border-t border-gray-200 px-6 py-4">
-        <Link href="/reports">
-          <div className="text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer">
-            Ver todas las actividades →
-          </div>
-        </Link>
+        <button 
+          onClick={handleViewAllClick}
+          className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer"
+        >
+          Ver todas las actividades 
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </button>
       </CardFooter>
     </Card>
   );
