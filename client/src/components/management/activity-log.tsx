@@ -191,7 +191,7 @@ export function ActivityLog() {
                 <SelectValue placeholder="Todos los tipos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los tipos</SelectItem>
+                <SelectItem value="all">Todos los tipos</SelectItem>
                 <SelectItem value="phone_call">Llamada</SelectItem>
                 <SelectItem value="visit">Visita</SelectItem>
                 <SelectItem value="payment">Pago</SelectItem>
@@ -213,7 +213,7 @@ export function ActivityLog() {
                 <SelectValue placeholder="Todas las entidades" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas las entidades</SelectItem>
+                <SelectItem value="all">Todas las entidades</SelectItem>
                 <SelectItem value="client">Cliente</SelectItem>
                 <SelectItem value="debtor">Deudor</SelectItem>
                 <SelectItem value="debt">Deuda</SelectItem>
@@ -234,7 +234,7 @@ export function ActivityLog() {
                 <SelectValue placeholder="Todos los usuarios" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los usuarios</SelectItem>
+                <SelectItem value="all">Todos los usuarios</SelectItem>
                 {users.map((user: any) => (
                   <SelectItem key={user.id} value={user.id.toString()}>
                     {user.fullName}

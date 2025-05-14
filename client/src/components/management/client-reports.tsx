@@ -171,7 +171,7 @@ export function ClientReports() {
                 <SelectValue placeholder="Todos los clientes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los clientes</SelectItem>
+                <SelectItem value="all">Todos los clientes</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id.toString()}>
                     {client.name}
@@ -195,7 +195,7 @@ export function ClientReports() {
                 <SelectValue placeholder="Todos los estados" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos los estados</SelectItem>
+                <SelectItem value="all">Todos los estados</SelectItem>
                 <SelectItem value="pending">Pendiente</SelectItem>
                 <SelectItem value="delivered">Entregado</SelectItem>
                 <SelectItem value="reviewed">Revisado</SelectItem>
