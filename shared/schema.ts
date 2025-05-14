@@ -53,6 +53,17 @@ export const DEBT_TYPE = {
 
 export type DebtType = typeof DEBT_TYPE[keyof typeof DEBT_TYPE];
 
+// PAYMENT METHOD ENUM
+export const PAYMENT_METHOD = {
+  CASH: "cash",
+  TRANSFER: "transfer",
+  CHECK: "check",
+  CARD: "card",
+  OTHER: "other",
+} as const;
+
+export type PaymentMethod = typeof PAYMENT_METHOD[keyof typeof PAYMENT_METHOD];
+
 // CONTACT TYPE ENUM
 export const CONTACT_TYPE = {
   PHONE: "phone",
