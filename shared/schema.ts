@@ -269,6 +269,20 @@ export const clientBankingInfo = pgTable("client_banking_info", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// PAYMENTS TABLE (ABONOS)
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  debtId: integer("debt_id").notNull().references(() => debts.id),
+  amount: real("amount").notNull(),
+  paymentDate: date("payment_date").notNull(),
+  paymentMethod: text("payment_method", { enum: Object.values(PAYMENT_METHOD) }).notNull(),
+  reference: text("reference"),
+  notes: text("notes"),
+  receiptUrl: text("receipt_url"),
+  registeredById: integer("registered_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // SCHEMAS
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLogin: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
@@ -281,6 +295,7 @@ export const insertVisitSchema = createInsertSchema(visits).omit({ id: true, cre
 export const insertClientReportSchema = createInsertSchema(clientReports).omit({ id: true, createdAt: true });
 export const insertClientContactSchema = createInsertSchema(clientContacts).omit({ id: true, createdAt: true });
 export const insertClientBankingInfoSchema = createInsertSchema(clientBankingInfo).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true });
 
 // TYPES
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -294,6 +309,7 @@ export type InsertVisit = z.infer<typeof insertVisitSchema>;
 export type InsertClientReport = z.infer<typeof insertClientReportSchema>;
 export type InsertClientContact = z.infer<typeof insertClientContactSchema>;
 export type InsertClientBankingInfo = z.infer<typeof insertClientBankingInfoSchema>;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -306,3 +322,4 @@ export type Visit = typeof visits.$inferSelect;
 export type ClientReport = typeof clientReports.$inferSelect;
 export type ClientContact = typeof clientContacts.$inferSelect;
 export type ClientBankingInfo = typeof clientBankingInfo.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
