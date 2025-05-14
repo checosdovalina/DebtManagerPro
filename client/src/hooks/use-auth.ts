@@ -25,9 +25,17 @@ export function useAuth() {
       throw new Error("Login failed");
     }
     
-    // Invalidate the auth query to refresh the user data
+    // Obtener la respuesta de login
+    const result = await response.json();
+    
+    // Forzar una actualización del estado de autenticación
     await queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
-    return response.json();
+    
+    // Esperar a que se complete la actualización
+    await queryClient.refetchQueries({ queryKey: ["/api/auth/session"] });
+    
+    console.log("Login successful, session refreshed");
+    return result;
   };
 
   const logout = async () => {
