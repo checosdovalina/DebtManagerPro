@@ -79,7 +79,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({
       executiveId: initialData?.executiveId || undefined,
       status: initialData?.status || CLIENT_STATUS.ACTIVE,
       notes: initialData?.notes || "",
-    },
+    } as ClientFormSchema,
   });
 
   const createMutation = useMutation({
@@ -308,7 +308,33 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                       <FormItem>
                         <FormLabel>Código Postal</FormLabel>
                         <FormControl>
-                          <Input placeholder="CP" {...field} />
+                          <Input 
+                            placeholder="CP" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Solo consultar cuando se hayan introducido 5 dígitos
+                              const cp = e.target.value;
+                              if (cp.length === 5) {
+                                // Importación dinámica para no bloquear la carga inicial
+                                import('@/lib/postalCodeService').then(({ getPostalCodeData }) => {
+                                  getPostalCodeData(cp).then(data => {
+                                    if (data) {
+                                      // Actualizar los campos de estado y ciudad automáticamente
+                                      form.setValue('state', data.estado);
+                                      form.setValue('city', data.municipio);
+                                      form.setValue('colony', data.colonia || form.getValues('colony'));
+                                      toast({
+                                        title: "Datos actualizados",
+                                        description: `Se completó la información de ${data.municipio}, ${data.estado}`,
+                                        duration: 3000,
+                                      });
+                                    }
+                                  });
+                                });
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -322,7 +348,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                       <FormItem>
                         <FormLabel>Estado</FormLabel>
                         <FormControl>
-                          <Input placeholder="Estado" {...field} />
+                          <Input 
+                            placeholder="Estado" 
+                            {...field} 
+                            className="bg-gray-50" 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -337,7 +367,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                     <FormItem>
                       <FormLabel>Ciudad/Municipio</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ciudad o municipio" {...field} />
+                        <Input 
+                          placeholder="Ciudad o municipio" 
+                          {...field} 
+                          className="bg-gray-50" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

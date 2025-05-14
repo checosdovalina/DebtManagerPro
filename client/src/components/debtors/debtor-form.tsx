@@ -371,7 +371,32 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
                       <FormItem>
                         <FormLabel>Código Postal</FormLabel>
                         <FormControl>
-                          <Input placeholder="CP" {...field} />
+                          <Input 
+                            placeholder="CP" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e);
+                              const cp = e.target.value;
+                              // Consultar solo cuando se ingresan 5 dígitos
+                              if (cp.length === 5) {
+                                import('@/lib/postalCodeService').then(({ getPostalCodeData }) => {
+                                  getPostalCodeData(cp).then(data => {
+                                    if (data) {
+                                      // Actualizar automáticamente los campos
+                                      form.setValue('state', data.estado);
+                                      form.setValue('city', data.municipio);
+                                      form.setValue('colony', data.colonia || form.getValues('colony'));
+                                      toast({
+                                        title: "Información actualizada",
+                                        description: `Se completó la información de ${data.municipio}, ${data.estado}`,
+                                        duration: 3000,
+                                      });
+                                    }
+                                  });
+                                });
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -385,7 +410,11 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
                       <FormItem>
                         <FormLabel>Estado</FormLabel>
                         <FormControl>
-                          <Input placeholder="Estado" {...field} />
+                          <Input 
+                            placeholder="Estado" 
+                            {...field} 
+                            className="bg-gray-50" 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -400,7 +429,11 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
                     <FormItem>
                       <FormLabel>Ciudad/Municipio</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ciudad o municipio" {...field} />
+                        <Input 
+                          placeholder="Ciudad o municipio" 
+                          {...field} 
+                          className="bg-gray-50" 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
