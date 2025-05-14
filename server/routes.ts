@@ -151,6 +151,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ authenticated: false });
     }
   });
+  
+  // Debug endpoint
+  app.get("/api/auth/debug", async (req, res) => {
+    try {
+      // Check if specific user exists
+      const testUser = await storage.getUserByEmail("admin@dcs.com");
+      // Get all users in memory for debugging
+      const allUsers = await storage.getUsers();
+      const safeUsers = allUsers.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json({
+        testUserExists: !!testUser,
+        testUser: testUser ? { email: testUser.email, role: testUser.role } : null,
+        userCount: safeUsers.length,
+        users: safeUsers.map(u => ({ id: u.id, email: u.email }))
+      });
+    } catch (error) {
+      console.error("Debug error:", error);
+      res.status(500).json({ error: "Error in debug endpoint" });
+    }
+  });
 
   app.post("/api/auth/logout", (req, res) => {
     req.logout(function(err) {

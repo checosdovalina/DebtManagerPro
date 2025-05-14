@@ -1197,4 +1197,6 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Usar MemStorage para el desarrollo/pruebas hasta que la base de datos esté completamente configurada
+export const storage = new MemStorage();
+// export const storage = new DatabaseStorage();
