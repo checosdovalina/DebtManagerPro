@@ -32,6 +32,7 @@ import {
   DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,12 +42,15 @@ import { apiRequest } from "@/lib/queryClient";
 import { 
   DEBT_TYPE, 
   type Debt, 
-  type InsertDebt 
+  type InsertDebt,
+  type Payment
 } from "@shared/schema";
-import { PlusCircle, FileText, DollarSign } from "lucide-react";
+import { PlusCircle, FileText, DollarSign, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PaymentForm } from "@/components/payments/payment-form";
+import { PaymentList } from "@/components/payments/payment-list";
 
 const debtFormSchema = z.object({
   concept: z.string().nonempty("El concepto del adeudo es requerido"),

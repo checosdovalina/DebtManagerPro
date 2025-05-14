@@ -10,7 +10,7 @@ import { insertPaymentSchema, PAYMENT_METHOD } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 
 // Extend schema with validation rules
@@ -30,7 +30,7 @@ type PaymentFormProps = {
 export function PaymentForm({ debtId, onSuccess, onCancel, debtAmount }: PaymentFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   
   const form = useForm<z.infer<typeof paymentSchema>>({
     resolver: zodResolver(paymentSchema),
