@@ -88,6 +88,12 @@ function Router() {
           <ReportsPage />
         </ProtectedRoute>
       </Route>
+      
+      <Route path="/reports/analytics">
+        <ProtectedRoute>
+          <ReportsPage />
+        </ProtectedRoute>
+      </Route>
 
       <Route path="/management">
         <ProtectedRoute>

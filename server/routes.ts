@@ -37,7 +37,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       store: new SessionStore({ checkPeriod: 86400000 }), // Prune expired entries every 24h
       cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        secure: process.env.NODE_ENV === "production"
+        secure: process.env.NODE_ENV === "production",
+        sameSite: 'lax'
       }
     })
   );

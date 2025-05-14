@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,19 +12,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    // Solo redireccionamos si explícitamente NO está autenticado
-    // (cuando isLoading es false y isAuthenticated es false)
     if (!isLoading && !isAuthenticated) {
-      console.log("No autenticado, redirigiendo a login");
       navigate('/login');
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Si está cargando o no está autenticado, no renderizar nada
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-xl font-medium text-gray-800">Cargando...</span>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return null;
   }
 
-  // Si está autenticado, mostrar el contenido protegido
   return <>{children}</>;
 };
