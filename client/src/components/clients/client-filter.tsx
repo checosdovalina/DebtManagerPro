@@ -26,7 +26,7 @@ export const ClientFilter: React.FC<ClientFilterProps> = ({
   executives = [] 
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [status, setStatus] = useState<ClientStatus | "">("");
+  const [status, setStatus] = useState<ClientStatus | "all">("all");
   const [executiveId, setExecutiveId] = useState<number | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -86,7 +86,7 @@ export const ClientFilter: React.FC<ClientFilterProps> = ({
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="active">Activo</SelectItem>
                   <SelectItem value="inactive">Inactivo</SelectItem>
                   <SelectItem value="pending">Pendiente</SelectItem>
@@ -109,7 +109,7 @@ export const ClientFilter: React.FC<ClientFilterProps> = ({
                   <SelectValue placeholder="Todos los ejecutivos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los ejecutivos</SelectItem>
+                  <SelectItem value="all">Todos los ejecutivos</SelectItem>
                   {executives.map((executive) => (
                     <SelectItem key={executive.id} value={executive.id.toString()}>
                       {executive.fullName}

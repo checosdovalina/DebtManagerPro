@@ -86,7 +86,7 @@ export const DebtorFilter: React.FC<DebtorFilterProps> = ({
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="new">Nuevo</SelectItem>
                   <SelectItem value="in_management">En gestión</SelectItem>
                   <SelectItem value="promising">Promesa</SelectItem>
@@ -112,7 +112,7 @@ export const DebtorFilter: React.FC<DebtorFilterProps> = ({
                   <SelectValue placeholder="Todos los clientes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los clientes</SelectItem>
+                  <SelectItem value="all">Todos los clientes</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id.toString()}>
                       {client.name}
