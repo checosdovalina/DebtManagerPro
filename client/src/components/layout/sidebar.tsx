@@ -33,16 +33,16 @@ const NavItem: React.FC<NavItemProps> = ({ href, label, icon, isActive, onClick 
   return (
     <li className="mb-1">
       <Link href={href}>
-        <a
+        <div
           onClick={onClick}
           className={cn(
-            "flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md",
+            "flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer",
             isActive && "bg-gray-700 text-white"
           )}
         >
           <div className="w-5 h-5 mr-3 text-center">{icon}</div>
           <span>{label}</span>
-        </a>
+        </div>
       </Link>
     </li>
   );
@@ -166,35 +166,35 @@ export const Sidebar: React.FC = () => {
                 <ul className="ml-6 mt-1 space-y-1">
                   <li>
                     <Link href="/debtors">
-                      <a
+                      <div
                         onClick={closeMobileSidebar}
-                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md"
+                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer"
                       >
                         <List className="h-5 w-5 mr-3" />
                         <span>Todos los deudores</span>
-                      </a>
+                      </div>
                     </Link>
                   </li>
                   <li>
                     <Link href="/debtors?assigned=true">
-                      <a
+                      <div
                         onClick={closeMobileSidebar}
-                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md"
+                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer"
                       >
                         <UserCheck className="h-5 w-5 mr-3" />
                         <span>Mis asignaciones</span>
-                      </a>
+                      </div>
                     </Link>
                   </li>
                   <li>
                     <Link href="/debtors?status=in_litigation">
-                      <a
+                      <div
                         onClick={closeMobileSidebar}
-                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md"
+                        className="flex items-center px-4 py-2 text-gray-400 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer"
                       >
                         <Gavel className="h-5 w-5 mr-3" />
                         <span>Estado judicial</span>
-                      </a>
+                      </div>
                     </Link>
                   </li>
                 </ul>
