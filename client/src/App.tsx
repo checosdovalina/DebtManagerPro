@@ -21,7 +21,15 @@ import { ProtectedRoute } from "./lib/auth";
 function Router() {
   return (
     <Switch>
+      {/* Ruta pública para login */}
       <Route path="/login" component={Login} />
+      
+      {/* Rutas protegidas */}
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
       
       <Route path="/clients">
         <ProtectedRoute>
@@ -95,12 +103,14 @@ function Router() {
         </ProtectedRoute>
       </Route>
       
+      {/* La ruta raíz debe redireccionar al dashboard */}
       <Route path="/">
         <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       </Route>
       
+      {/* Ruta de 404 para cualquier otra ruta no definida */}
       <Route component={NotFound} />
     </Switch>
   );

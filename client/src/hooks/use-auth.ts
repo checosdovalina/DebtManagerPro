@@ -9,12 +9,14 @@ interface AuthSession {
 export function useAuth() {
   const queryClient = useQueryClient();
 
-  const { data: session, isLoading } = useQuery<AuthSession>({
+  const { data: session, isLoading, refetch } = useQuery<AuthSession>({
     queryKey: ["/api/auth/session"],
-    retry: false,
+    retry: 2,
+    retryDelay: 1000,
     refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000, // Refresh session every 5 minutes
+    refetchInterval: 2 * 60 * 1000, // Refresh session every 2 minutes
     refetchOnMount: true,
+    staleTime: 10 * 1000, // Consider data stale after 10 seconds
     initialData: { authenticated: false }
   });
 
