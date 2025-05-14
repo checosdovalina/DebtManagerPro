@@ -125,9 +125,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
                         <p className="text-sm text-gray-500">
                           {getActivityDescription(activity)}{" "}
                           <Link href={`/debtors/${activity.debtor.id}`}>
-                            <a className="font-medium text-gray-900 hover:text-primary-600">
+                            <div className="font-medium text-gray-900 hover:text-primary-600 cursor-pointer">
                               {activity.result}
-                            </a>
+                            </div>
                           </Link>
                         </p>
                       </div>
@@ -144,9 +144,9 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
       </CardContent>
       <CardFooter className="border-t border-gray-200 px-6 py-4">
         <Link href="/reports">
-          <a className="text-sm font-medium text-primary-600 hover:text-primary-800">
+          <div className="text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer">
             Ver todas las actividades →
-          </a>
+          </div>
         </Link>
       </CardFooter>
     </Card>

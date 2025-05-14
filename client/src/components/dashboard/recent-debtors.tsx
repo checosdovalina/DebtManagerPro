@@ -53,9 +53,9 @@ export const RecentDebtors: React.FC<RecentDebtorsProps> = ({ debtors }) => {
       </CardContent>
       <CardFooter className="px-6 py-4 border-t border-gray-200">
         <Link href="/debtors">
-          <a className="text-sm font-medium text-primary-600 hover:text-primary-800">
+          <div className="text-sm font-medium text-primary-600 hover:text-primary-800 cursor-pointer">
             Ver todos los deudores →
-          </a>
+          </div>
         </Link>
       </CardFooter>
     </Card>
