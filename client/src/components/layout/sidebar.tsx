@@ -15,7 +15,8 @@ import {
   UserCheck,
   List,
   Menu,
-  X
+  X,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,7 +37,7 @@ const NavItem: React.FC<NavItemProps> = ({ href, label, icon, isActive, onClick 
         <div
           onClick={onClick}
           className={cn(
-            "flex items-center px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer",
+            "flex items-center px-4 py-2.5 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md cursor-pointer",
             isActive && "bg-gray-700 text-white"
           )}
         >
@@ -107,16 +108,17 @@ export const Sidebar: React.FC = () => {
         {/* User profile mini */}
         <div className="p-4 border-b border-gray-700">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-semibold">
+            <div className="flex flex-shrink-0 items-center justify-center w-10 h-10 rounded-full bg-primary-600 text-white font-semibold">
               {user?.fullName ? getInitials(user.fullName) : "U"}
             </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium">{user?.fullName}</p>
-              <p className="text-xs text-gray-400">{user?.role === "manager" ? "Gerente de Cobranza" : 
+            <div className="ml-3 min-w-0">
+              <p className="text-sm font-medium truncate">{user?.fullName}</p>
+              <p className="text-xs text-gray-400 truncate">{user?.role === "manager" ? "Gerente de Cobranza" : 
                 user?.role === "admin" ? "Administrador" : 
                 user?.role === "executive" ? "Ejecutivo Comercial" : 
                 user?.role === "collector" ? "Gestor de Cobranza" : 
                 user?.role === "superadmin" ? "Super Administrador" : 
+                user?.role === "director" ? "Director" : 
                 "Usuario"}
               </p>
             </div>
@@ -146,7 +148,7 @@ export const Sidebar: React.FC = () => {
             <li className="mb-1">
               <button
                 className={cn(
-                  "w-full flex items-center justify-between px-4 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md",
+                  "w-full flex items-center justify-between px-4 py-2.5 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md",
                   location.includes("/debtors") && "bg-gray-700 text-white"
                 )}
                 onClick={toggleDebtors}
@@ -224,16 +226,14 @@ export const Sidebar: React.FC = () => {
               isActive={location === "/documents"}
               onClick={closeMobileSidebar}
             />
-
-            {(user?.role === "admin" || user?.role === "superadmin") && (
-              <NavItem
-                href="/users"
-                label="Administración"
-                icon={<Settings className="h-5 w-5" />}
-                isActive={location === "/users"}
-                onClick={closeMobileSidebar}
-              />
-            )}
+            
+            <NavItem
+              href="#"
+              label="Administración"
+              icon={<Settings className="h-5 w-5" />}
+              isActive={location === "/users"}
+              onClick={closeMobileSidebar}
+            />
           </ul>
         </nav>
 
