@@ -112,13 +112,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Authentication Routes
-  app.post("/api/auth/login", passport.authenticate("local"), (req, res) => {
-    const user = req.user as any;
-    // Update last login time (async)
-    storage.updateUser(user.id, { lastLogin: new Date() });
-    // Return user without password
-    const { password, ...userWithoutPassword } = user;
-    res.json({ user: userWithoutPassword });
+  app.post("/api/auth/login", (req, res, next) => {
+    // Log the login attempt
+    console.log("Login attempt:", req.body.email);
+    
+    passport.authenticate("local", (err, user, info) => {
+      console.log("Authentication result:", { err, user: user ? 'User found' : 'No user', info });
+      
+      if (err) {
+        return next(err);
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Credenciales inválidas" });
+      }
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          return next(loginErr);
+        }
+        
+        // Update last login time (async)
+        storage.updateUser(user.id, { lastLogin: new Date() });
+        
+        // Return user without password
+        const { password, ...userWithoutPassword } = user;
+        return res.json({ user: userWithoutPassword });
+      });
+    })(req, res, next);
   });
 
   app.get("/api/auth/session", (req, res) => {
