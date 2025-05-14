@@ -1,0 +1,278 @@
+ Crear un sistema de gestión para un despacho de cobranza con funcionalidades específicas para diferentes roles y módulos. A continuación te presento una estructura inicial detallada que podrías utilizar como base para el desarrollo del sistema.
+
+ MÓDULO DE USUARIOS
+Roles:
+
+Superadmin (control total del sistema)
+
+Administrador
+
+Ejecutivo Comercial
+
+Gerente de Cobranza
+
+Gestor
+
+Campos por usuario:
+Nombre completo
+
+Correo electrónico
+
+Teléfono
+
+Rol (seleccionable)
+
+Estado (activo/inactivo)
+
+Fecha de alta
+
+Último acceso
+
+👤 MÓDULO DE CLIENTES
+Este módulo contiene la información de las empresas o personas físicas que contratan los servicios del despacho.
+
+Campos sugeridos:
+Nombre completo / Razón Social
+
+RFC
+
+CURP (si aplica)
+
+Tipo de persona (Física/Moral)
+
+Dirección fiscal (Calle, número, colonia, CP, estado, municipio)
+
+Teléfono
+
+Correo electrónico
+
+Representante legal
+
+Giro empresarial
+
+Fecha de alta como cliente
+
+Contacto(s) adicional(es)
+
+📂 MÓDULO DE DEUDORES
+Cada cliente puede tener múltiples deudores asociados. Cada deudor tendrá una ficha con pestañas o submódulos como:
+
+Datos generales del deudor:
+Nombre completo / Razón social
+
+RFC
+
+CURP (si aplica)
+
+Dirección
+
+Teléfono
+
+Correo electrónico
+
+Nombre del contacto (si es empresa)
+
+Estado del proceso (nuevo, en gestión, judicializado, pagado, cancelado)
+
+Submodulos de deudores:  
+
+MÓDULO DE DEUDORES
+Cada deudor tendrá una ficha que incluye estos submódulos:
+
+1. Datos Generales
+Información básica del deudor.
+
+Campos sugeridos:
+
+Nombre completo / Razón Social
+
+RFC
+
+CURP (si aplica)
+
+Tipo de persona (Física / Moral)
+
+Dirección completa
+
+Teléfono(s)
+
+Correo electrónico
+
+Nombre del contacto (si es empresa)
+
+Cliente asociado
+
+Gestor asignado
+
+Estado del proceso (ej. Nuevo, En gestión, Promesa, Pagado, Judicializado, Cancelado)
+
+2. Adeudo
+Datos relacionados con la deuda principal.
+
+Campos sugeridos:
+
+Monto original del adeudo
+
+Fecha de inicio de deuda
+
+Fecha de vencimiento
+
+Intereses (si aplica)
+
+Días en mora
+
+Tipo de deuda (pagaré, factura, crédito, etc.)
+
+Acreedor (cliente)
+
+Documentación de respaldo (facturas, contratos, etc.)
+
+Observaciones
+
+3. Bitácora
+Registro de gestiones realizadas por el despacho.
+
+Campos por entrada:
+
+Fecha de gestión
+
+Hora
+
+Medio de contacto (teléfono, WhatsApp, visita, etc.)
+
+Resultado (localizado, no localizado, promesa, negativa, etc.)
+
+Gestor responsable
+
+Comentarios detallados
+
+Próxima acción / seguimiento
+
+4. Reporte al Cliente
+Resumen de las acciones relevantes a compartir con el cliente.
+
+Campos sugeridos:
+
+Fecha del reporte
+
+Periodo cubierto
+
+Gestiones realizadas (resumen)
+
+Promesas de pago obtenidas
+
+Pagos realizados
+
+Recomendaciones
+
+Estado actual del deudor
+
+Comentarios adicionales
+
+Archivo PDF generado o adjunto del reporte (opcional)
+
+5. Datos de Visitas
+Información de visitas físicas realizadas al deudor.
+
+Campos por visita:
+
+Fecha y hora
+
+Dirección visitada
+
+Resultado de la visita
+
+Persona con la que se habló
+
+Evidencia (foto, firma, nota)
+
+Observaciones
+
+Gestor que realizó la visita
+
+Próxima visita programada (si aplica)
+
+6. Judicialización
+Seguimiento del proceso legal, si aplica.
+
+Campos sugeridos:
+
+¿Proceso judicial iniciado? (Sí / No)
+
+Fecha de inicio
+
+Tipo de proceso legal (demanda, embargo, etc.)
+
+Número de expediente
+
+Juzgado asignado
+
+Abogado responsable
+
+Estado del proceso (activo, resuelto, suspendido)
+
+Resolución / Sentencia (si aplica)
+
+Fechas clave (audiencias, notificaciones)
+
+Documentación adjunta (PDF, escaneos)
+
+7. Documentos Adjuntos
+Gestión de archivos relacionados con el deudor.
+
+Funcionalidades:
+
+Subida de documentos (pagarés, contratos, oficios, etc.)
+
+Visualización o descarga
+
+Clasificación por tipo de documento
+
+Fecha de carga
+
+Usuario que lo subió
+
+Comentarios / descripción del archivo
+FLUJO DE REGISTRO Y ASIGNACIÓN
+1. CREAR CLIENTE
+Ejemplo: GAFI FERRELÉCTRICO
+Datos del cliente: nombre, RFC, contacto, dirección, etc.
+
+🔽
+Asignar a un Ejecutivo Comercial (puedes ser tú o cualquier usuario con ese rol).
+
+2. ASIGNACIÓN DE CUENTAS DEUDORAS
+El Ejecutivo Comercial (o tú) registra deudores bajo ese cliente:
+Ejemplo deudores:
+
+Juan Pérez
+
+Transportes Veloz S.A. de C.V.
+
+Comercializadora La Huerta
+
+Cada deudor tiene su propia ficha y submódulos (bitácora, adeudo, visitas, etc.).
+
+🔽
+Luego cada deudor se asigna a un Gestor o al Gerente de Cobranza.
+
+🧑‍💼 ROLES Y PERMISOS
+Rol	Puede ver / hacer
+Superadmin	Acceso total al sistema, gestión de usuarios, configuraciones globales
+Director	Ve todos los clientes, todos los deudores, todas las asignaciones
+Gerente de Cobranza	Ve todos los deudores, aunque no estén asignados directamente
+Ejecutivo Comercial	Ve solo los clientes asignados y sus deudores
+Gestor	Ve solo los deudores asignados a él
+
+🔗 RELACIONES ENTRE ENTIDADES (Modelo lógico)
+Cliente
+→ tiene muchos → Deudores
+→ asignado a → Ejecutivo Comercial
+
+Deudor
+→ pertenece a → Cliente
+→ asignado a → Gestor ó Gerente de Cobranza
+
+Usuarios
+→ tienen un → Rol
+→ pueden estar asignados como gestores, ejecutivos, etc.
