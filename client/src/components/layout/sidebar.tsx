@@ -96,7 +96,18 @@ export const Sidebar: React.FC = () => {
         isMobileSidebarOpen ? "fixed inset-0 z-50" : "hidden md:flex"
       )}>
         <div className="p-4 flex items-center justify-between border-b border-gray-700">
-          <h1 className="text-xl font-bold">DCS</h1>
+          <div className="flex items-center">
+            <img 
+              src="/logo-white.png" 
+              alt="DCS Logo" 
+              className="h-8 mr-2" 
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = "/logo.png";
+              }}
+            />
+            <h1 className="text-xl font-bold">DCS</h1>
+          </div>
           <button
             className="block md:hidden text-gray-400 hover:text-white"
             onClick={closeMobileSidebar}
