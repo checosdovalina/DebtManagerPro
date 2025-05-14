@@ -6,6 +6,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import MemoryStore from "memorystore";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import {
   insertUserSchema,
   insertClientSchema,
@@ -29,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session
   app.use(
     session({
-      secret: "siscobranza-secret-key",
+      secret: "dcs-secret-key-2024",
       resave: false,
       saveUninitialized: false,
       store: new SessionStore({ checkPeriod: 86400000 }), // Prune expired entries every 24h
@@ -52,11 +53,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const user = await storage.getUserByEmail(email);
           if (!user) {
-            return done(null, false, { message: "Incorrect email." });
+            return done(null, false, { message: "Correo electrónico incorrecto." });
           }
-          if (user.password !== password) { // In a real app, use bcrypt.compare
-            return done(null, false, { message: "Incorrect password." });
+          
+          // For development purpose, allow plain password for the demo credentials
+          if (email === "admin@dcs.com" && password === "password123" && user.password === "password123") {
+            return done(null, user);
           }
+          
+          const isMatch = await bcrypt.compare(password, user.password);
+          if (!isMatch) {
+            return done(null, false, { message: "Contraseña incorrecta." });
+          }
+          
           return done(null, user);
         } catch (err) {
           return done(err);
@@ -171,6 +180,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/users", isAuthenticated, hasRole([USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN]), async (req, res) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
+      
+      // Hash the password
+      const salt = await bcrypt.genSalt(10);
+      validatedData.password = await bcrypt.hash(validatedData.password, salt);
+      
       const user = await storage.createUser(validatedData);
       
       // Remove password from response
@@ -196,10 +210,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const userData = req.body;
+      
       // Prevent role escalation if not an admin/superadmin
       if (userData.role && 
           ![USER_ROLES.SUPERADMIN, USER_ROLES.ADMIN].includes(currentUser.role)) {
         delete userData.role;
+      }
+      
+      // If password is being updated, hash it
+      if (userData.password) {
+        const salt = await bcrypt.genSalt(10);
+        userData.password = await bcrypt.hash(userData.password, salt);
       }
       
       const user = await storage.updateUser(id, userData);
