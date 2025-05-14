@@ -113,6 +113,8 @@ export default function UsersPage() {
         return "Super Administrador";
       case USER_ROLES.ADMIN:
         return "Administrador";
+      case USER_ROLES.DIRECTOR:
+        return "Director";
       case USER_ROLES.COLLECTION_MANAGER:
         return "Gerente de Cobranza";
       case USER_ROLES.COMMERCIAL_EXECUTIVE:

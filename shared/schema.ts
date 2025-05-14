@@ -6,6 +6,7 @@ import { z } from "zod";
 export const USER_ROLES = {
   SUPERADMIN: "superadmin",
   ADMIN: "admin",
+  DIRECTOR: "director",
   COMMERCIAL_EXECUTIVE: "executive",
   COLLECTION_MANAGER: "manager",
   COLLECTOR: "collector",
