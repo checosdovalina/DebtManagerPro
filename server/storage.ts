@@ -96,6 +96,20 @@ export interface IStorage {
   createClientBankingInfo(bankingInfo: InsertClientBankingInfo): Promise<ClientBankingInfo>;
   updateClientBankingInfo(clientId: number, bankingInfo: Partial<ClientBankingInfo>): Promise<ClientBankingInfo | undefined>;
 
+  // Management
+  getActivityLogs(options: {
+    page?: number;
+    limit?: number;
+    userId?: number;
+    debtorId?: number;
+    type?: string;
+  }): Promise<ActivityLog[]>;
+  getScheduledActivities(startDate: string, endDate: string): Promise<any[]>;
+  getClientReports(options: {
+    clientId?: number;
+    status?: string;
+  }): Promise<ClientReport[]>;
+
   // Dashboard Data
   getDashboardStats(): Promise<{
     activeClients: number;

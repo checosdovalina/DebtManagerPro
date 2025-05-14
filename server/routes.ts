@@ -734,6 +734,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Management Routes
+  app.get("/api/activities/recent", isAuthenticated, async (req, res) => {
+    try {
+      // You can add filter parameters here from req.query
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      const activities = await storage.getActivityLogs({
+        page,
+        limit,
+        userId: req.query.userId ? parseInt(req.query.userId as string) : undefined,
+        debtorId: req.query.debtorId ? parseInt(req.query.debtorId as string) : undefined,
+        type: req.query.type as string | undefined,
+      });
+      
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching activities" });
+    }
+  });
+  
+  app.get("/api/activities/calendar", isAuthenticated, async (req, res) => {
+    try {
+      const startDate = req.query.start as string;
+      const endDate = req.query.end as string;
+      
+      // Get all scheduled events (visits, follow-ups, etc.)
+      const activityLogs = await storage.getScheduledActivities(startDate, endDate);
+      
+      res.json(activityLogs);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching calendar events" });
+    }
+  });
+  
+  app.get("/api/reports/client", isAuthenticated, async (req, res) => {
+    try {
+      const clientReports = await storage.getClientReports({
+        clientId: req.query.clientId ? parseInt(req.query.clientId as string) : undefined,
+        status: req.query.status as string | undefined,
+      });
+      
+      res.json(clientReports);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching client reports" });
+    }
+  });
+
   // Documents Routes
   app.get("/api/documents/:entityType/:entityId", isAuthenticated, async (req, res) => {
     try {

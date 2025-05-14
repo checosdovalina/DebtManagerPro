@@ -88,6 +88,12 @@ function Router() {
           <ReportsPage />
         </ProtectedRoute>
       </Route>
+
+      <Route path="/management">
+        <ProtectedRoute>
+          <ManagementPage />
+        </ProtectedRoute>
+      </Route>
       
       <Route component={NotFound} />
     </Switch>
