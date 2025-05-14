@@ -10,6 +10,7 @@ import {
   clientReports, type ClientReport, type InsertClientReport,
   clientContacts, type ClientContact, type InsertClientContact,
   clientBankingInfo, type ClientBankingInfo, type InsertClientBankingInfo,
+  payments, type Payment, type InsertPayment,
   USER_ROLES
 } from "@shared/schema";
 
@@ -104,6 +105,12 @@ export interface IStorage {
   }>;
   getRecentDebtors(limit?: number): Promise<Debtor[]>;
   getRecentActivities(limit?: number): Promise<ActivityLog[]>;
+  
+  // Payments (Abonos)
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getPaymentsByDebtId(debtId: number): Promise<Payment[]>;
+  getPayment(id: number): Promise<Payment | undefined>;
+  updateDebtAmountAfterPayment(debtId: number, newAmount: number): Promise<Debt | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -118,6 +125,7 @@ export class MemStorage implements IStorage {
   private clientReports: Map<number, ClientReport>;
   private clientContacts: Map<number, ClientContact>;
   private clientBankingInfos: Map<number, ClientBankingInfo>;
+  private payments: Map<number, Payment>;
 
   private userIdCounter: number;
   private clientIdCounter: number;
@@ -127,6 +135,7 @@ export class MemStorage implements IStorage {
   private documentIdCounter: number;
   private litigationIdCounter: number;
   private visitIdCounter: number;
+  private paymentIdCounter: number;
   private clientReportIdCounter: number;
   private clientContactIdCounter: number;
   private clientBankingInfoIdCounter: number;
@@ -143,6 +152,7 @@ export class MemStorage implements IStorage {
     this.clientReports = new Map();
     this.clientContacts = new Map();
     this.clientBankingInfos = new Map();
+    this.payments = new Map();
 
     this.userIdCounter = 1;
     this.clientIdCounter = 1;
