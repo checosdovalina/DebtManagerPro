@@ -824,5 +824,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PAYMENT ROUTES
+  app.get("/api/debts/:debtId/payments", isAuthenticated, async (req, res) => {
+    try {
+      const debtId = parseInt(req.params.debtId);
+      const payments = await storage.getPaymentsByDebtId(debtId);
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching payments" });
+    }
+  });
+  
+  app.post("/api/debts/:debtId/payments", isAuthenticated, async (req, res) => {
+    try {
+      const debtId = parseInt(req.params.debtId);
+      const debt = await storage.getDebt(debtId);
+      
+      if (!debt) {
+        return res.status(404).json({ message: "Debt not found" });
+      }
+      
+      const currentUser = req.user as any;
+      // Make sure we use the correct field names as per schema
+      const paymentData = insertPaymentSchema.parse({
+        ...req.body,
+        debtId,
+        registeredById: currentUser.id
+      });
+      
+      // Validate payment amount does not exceed current debt amount
+      if (paymentData.amount > debt.currentAmount) {
+        return res.status(400).json({ message: "Payment amount cannot exceed current debt amount" });
+      }
+      
+      // Create the payment record
+      const payment = await storage.createPayment(paymentData);
+      
+      // Update the debt's current amount
+      const newDebtAmount = debt.currentAmount - paymentData.amount;
+      await storage.updateDebtAmountAfterPayment(debtId, newDebtAmount);
+      
+      // Log the payment activity
+      await storage.createActivityLog({
+        debtorId: debt.debtorId,
+        userId: currentUser.id,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().split(' ')[0].slice(0, 5),
+        contactType: CONTACT_TYPE.OTHER,
+        result: CONTACT_RESULT.PAID,
+        comments: `Pago registrado por $${paymentData.amount.toFixed(2)} mediante ${paymentData.paymentMethod}`,
+        nextAction: null,
+        nextActionDate: null
+      });
+      
+      res.status(201).json(payment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error creating payment" });
+    }
+  });
+  
+  app.get("/api/payments/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const payment = await storage.getPayment(id);
+      
+      if (!payment) {
+        return res.status(404).json({ message: "Payment not found" });
+      }
+      
+      res.json(payment);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching payment" });
+    }
+  });
+
   return httpServer;
 }
