@@ -8,6 +8,7 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import ClientsPage from "@/pages/clients/index";
 import ClientDetailPage from "@/pages/clients/[id]";
+import ClientEditPage from "@/pages/clients/edit";
 import NewClientPage from "@/pages/clients/new";
 import DebtorsPage from "@/pages/debtors/index";
 import DebtorDetailPage from "@/pages/debtors/[id]";
@@ -43,6 +44,14 @@ function Router() {
         {(params) => (
           <ProtectedRoute>
             <ClientDetailPage id={Number(params.id)} />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+      <Route path="/clients/:id/edit">
+        {(params) => (
+          <ProtectedRoute>
+            <ClientEditPage id={Number(params.id)} />
           </ProtectedRoute>
         )}
       </Route>
