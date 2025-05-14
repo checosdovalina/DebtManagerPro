@@ -202,10 +202,10 @@ export const Sidebar: React.FC = () => {
             </li>
 
             <NavItem
-              href="/reports"
+              href="/management"
               label="Gestión y seguimiento"
               icon={<ClipboardList className="h-5 w-5" />}
-              isActive={location === "/reports"}
+              isActive={location.includes("/management")}
               onClick={closeMobileSidebar}
             />
 

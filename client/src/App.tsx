@@ -15,6 +15,7 @@ import DebtorDetailPage from "@/pages/debtors/[id]";
 import NewDebtorPage from "@/pages/debtors/new";
 import UsersPage from "@/pages/users/index";
 import ReportsPage from "@/pages/reports/index";
+import ManagementPage from "@/pages/management/index";
 import { ProtectedRoute } from "@/lib/auth";
 
 function Router() {
