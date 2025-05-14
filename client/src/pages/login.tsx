@@ -53,7 +53,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      // Realizar petición directa en lugar de usar el hook
+      // Usar una implementación simple y directa para el login
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -63,27 +63,43 @@ export default function Login() {
           email: data.email,
           password: data.password
         }),
-        credentials: 'include' // Importante para cookies
+        credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error('Credenciales inválidas');
+      const responseText = await response.text();
+      console.log("Login response:", response.status, responseText);
+      
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Error parsing JSON:", e);
       }
       
-      const result = await response.json();
-      console.log("Login successful:", result);
+      if (!response.ok) {
+        throw new Error('Error en autenticación');
+      }
       
       toast({
         title: "Inicio de sesión exitoso",
-        description: "Has iniciado sesión correctamente",
+        description: "Redirigiendo al panel principal...",
+        duration: 3000,
       });
       
-      // Redireccionar al dashboard usando window.location
-      window.location.href = '/dashboard';
+      // Esperar un momento para que el usuario vea el mensaje
+      setTimeout(() => {
+        // Forzar un refresco completo para asegurar un estado limpio
+        window.location.href = '/';
+      }, 500);
       
     } catch (error) {
       console.error("Login error:", error);
       setLoginError("Credenciales inválidas. Por favor, intente de nuevo.");
+      toast({
+        title: "Error de inicio de sesión",
+        description: "No se pudo iniciar sesión. Verifica tus credenciales.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

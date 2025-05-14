@@ -115,9 +115,10 @@ function Router() {
       
       {/* La ruta raíz debe redireccionar al dashboard */}
       <Route path="/">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
+        {() => {
+          window.location.href = '/dashboard';
+          return null;
+        }}
       </Route>
       
       {/* Ruta de 404 para cualquier otra ruta no definida */}
