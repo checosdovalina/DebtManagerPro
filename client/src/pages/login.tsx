@@ -73,7 +73,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center flex flex-col items-center">
           <div className="mb-4">
-            <img src="/src/assets/logo.png" alt="DCS Logo" className="h-20 w-auto" />
+            <img src="/logo.png" alt="DCS Logo" className="h-20 w-auto" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">DCS</h1>
           <p className="mt-2 text-sm text-gray-600">
