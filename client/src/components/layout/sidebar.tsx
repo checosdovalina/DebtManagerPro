@@ -95,7 +95,7 @@ export const Sidebar: React.FC = () => {
         isMobileSidebarOpen ? "fixed inset-0 z-50" : "hidden md:flex"
       )}>
         <div className="p-4 flex items-center justify-between border-b border-gray-700">
-          <h1 className="text-xl font-bold">SisCobra</h1>
+          <h1 className="text-xl font-bold">DCS</h1>
           <button
             className="block md:hidden text-gray-400 hover:text-white"
             onClick={closeMobileSidebar}
