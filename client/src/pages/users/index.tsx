@@ -309,6 +309,7 @@ export default function UsersPage() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value={USER_ROLES.ADMIN}>Administrador</SelectItem>
+                              <SelectItem value={USER_ROLES.DIRECTOR}>Director</SelectItem>
                               <SelectItem value={USER_ROLES.COLLECTION_MANAGER}>Gerente de Cobranza</SelectItem>
                               <SelectItem value={USER_ROLES.COMMERCIAL_EXECUTIVE}>Ejecutivo Comercial</SelectItem>
                               <SelectItem value={USER_ROLES.COLLECTOR}>Gestor</SelectItem>
