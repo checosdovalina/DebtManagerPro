@@ -1370,6 +1370,119 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Management module functions
+  async getActivityLogs(options: {
+    page?: number;
+    limit?: number;
+    userId?: number;
+    debtorId?: number;
+    type?: string;
+  }): Promise<ActivityLog[]> {
+    try {
+      const page = options.page || 1;
+      const limit = options.limit || 10;
+      const offset = (page - 1) * limit;
+      
+      let query = db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt));
+      
+      if (options.userId) {
+        query = query.where(eq(activityLogs.userId, options.userId));
+      }
+      
+      if (options.debtorId) {
+        query = query.where(eq(activityLogs.debtorId, options.debtorId));
+      }
+      
+      if (options.type) {
+        query = query.where(eq(activityLogs.contactType, options.type as any));
+      }
+      
+      const activities = await query.limit(limit).offset(offset);
+      return activities;
+    } catch (error) {
+      console.error("Error fetching activity logs:", error);
+      return [];
+    }
+  }
+  
+  async getScheduledActivities(startDate: string, endDate: string): Promise<any[]> {
+    try {
+      const visitPromise = db
+        .select()
+        .from(visits)
+        .where(
+          and(
+            gte(visits.date, startDate),
+            lte(visits.date, endDate)
+          )
+        )
+        .orderBy(asc(visits.date));
+        
+      const activityPromise = db
+        .select()
+        .from(activityLogs)
+        .where(
+          and(
+            isNotNull(activityLogs.nextActionDate),
+            gte(activityLogs.nextActionDate, startDate),
+            lte(activityLogs.nextActionDate, endDate)
+          )
+        )
+        .orderBy(asc(activityLogs.nextActionDate));
+        
+      const [visitsList, activitiesList] = await Promise.all([visitPromise, activityPromise]);
+      
+      // Transform into calendar events
+      const calendarEvents = [
+        ...visitsList.map(visit => ({
+          id: `visit-${visit.id}`,
+          title: `Visita a deudor ID: ${visit.debtorId}`,
+          date: visit.date,
+          time: visit.time,
+          type: 'visit',
+          entityId: visit.debtorId,
+          entityType: 'debtor'
+        })),
+        ...activitiesList.map(activity => ({
+          id: `activity-${activity.id}`,
+          title: `Seguimiento: ${activity.nextAction || 'Actividad programada'}`,
+          date: activity.nextActionDate,
+          time: activity.time,
+          type: 'follow-up',
+          entityId: activity.debtorId,
+          entityType: 'debtor'
+        }))
+      ];
+      
+      return calendarEvents;
+    } catch (error) {
+      console.error("Error fetching scheduled activities:", error);
+      return [];
+    }
+  }
+  
+  async getClientReports(options: {
+    clientId?: number;
+    status?: string;
+  }): Promise<ClientReport[]> {
+    try {
+      let query = db.select().from(clientReports).orderBy(desc(clientReports.createdAt));
+      
+      if (options.clientId) {
+        query = query.where(eq(clientReports.clientId, options.clientId));
+      }
+      
+      if (options.status) {
+        query = query.where(eq(clientReports.status, options.status));
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error("Error fetching client reports:", error);
+      return [];
+    }
+  }
+
   // Dashboard Data
   async getDashboardStats(): Promise<{
     activeClients: number;
