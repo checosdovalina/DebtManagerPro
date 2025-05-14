@@ -530,16 +530,16 @@ export class MemStorage implements IStorage {
     // Create users
     const adminUser: InsertUser = {
       fullName: "Juan Dominguez",
-      email: "admin@siscobranza.com",
+      email: "admin@dcs.com",
       phone: "555-123-4567",
-      password: "password123", // In a real app, this would be hashed
+      password: "password123", // Password for demo purposes
       role: USER_ROLES.ADMIN,
     };
     this.createUser(adminUser);
 
     const managerUser: InsertUser = {
       fullName: "Maria Lopez",
-      email: "manager@siscobranza.com",
+      email: "manager@dcs.com",
       phone: "555-987-6543",
       password: "password123",
       role: USER_ROLES.COLLECTION_MANAGER,
@@ -548,7 +548,7 @@ export class MemStorage implements IStorage {
 
     const exec1: InsertUser = {
       fullName: "Carlos Jiménez",
-      email: "carlos@siscobranza.com",
+      email: "carlos@dcs.com",
       phone: "555-111-2222",
       password: "password123",
       role: USER_ROLES.COMMERCIAL_EXECUTIVE,
@@ -557,7 +557,7 @@ export class MemStorage implements IStorage {
 
     const exec2: InsertUser = {
       fullName: "Laura Martínez",
-      email: "laura@siscobranza.com",
+      email: "laura@dcs.com",
       phone: "555-333-4444",
       password: "password123",
       role: USER_ROLES.COMMERCIAL_EXECUTIVE,
@@ -566,7 +566,7 @@ export class MemStorage implements IStorage {
 
     const collector1: InsertUser = {
       fullName: "Roberto Sánchez",
-      email: "roberto@siscobranza.com",
+      email: "roberto@dcs.com",
       phone: "555-555-6666",
       password: "password123",
       role: USER_ROLES.COLLECTOR,
