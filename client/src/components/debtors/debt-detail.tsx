@@ -74,6 +74,8 @@ export const DebtDetail: React.FC<DebtDetailProps> = ({ debtorId }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDebtOpen, setIsAddDebtOpen] = useState(false);
+  const [selectedDebtId, setSelectedDebtId] = useState<number | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const { data: debts = [], isLoading } = useQuery<Debt[]>({
     queryKey: [`/api/debtors/${debtorId}/debts`],
@@ -440,14 +442,75 @@ export const DebtDetail: React.FC<DebtDetailProps> = ({ debtorId }) => {
                           Interés: {debt.interest}%
                         </div>
                       )}
+                      <div className="mt-3">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedDebtId(debt.id);
+                            setIsPaymentModalOpen(true);
+                          }}
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Registrar Pago
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
+                <CardFooter className="p-4 pt-0 border-t border-gray-100">
+                  <Tabs defaultValue="pagos" className="w-full">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="pagos" className="flex-1">Pagos</TabsTrigger>
+                      <TabsTrigger value="documentos" className="flex-1">Documentos</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="pagos" className="mt-4">
+                      <PaymentList 
+                        debtId={debt.id} 
+                        onAddPayment={() => {
+                          setSelectedDebtId(debt.id);
+                          setIsPaymentModalOpen(true);
+                        }} 
+                      />
+                    </TabsContent>
+                    <TabsContent value="documentos" className="mt-4">
+                      <div className="text-center p-4 text-sm text-gray-500">
+                        No hay documentos registrados para esta deuda.
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardFooter>
               </Card>
             ))}
           </div>
         </>
       )}
+
+      {/* Modal para registrar pagos */}
+      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Registrar Pago</DialogTitle>
+          </DialogHeader>
+          {selectedDebtId && (
+            <PaymentForm 
+              debtId={selectedDebtId} 
+              debtAmount={debts.find(d => d.id === selectedDebtId)?.currentAmount || 0}
+              onSuccess={() => {
+                setIsPaymentModalOpen(false);
+                toast({
+                  title: "Pago registrado",
+                  description: "El pago ha sido registrado con éxito.",
+                });
+                // Invalidar las consultas para actualizar los datos
+                queryClient.invalidateQueries({ queryKey: [`/api/debtors/${debtorId}/debts`] });
+              }} 
+              onCancel={() => setIsPaymentModalOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
