@@ -119,6 +119,8 @@ export interface IStorage {
   }>;
   getRecentDebtors(limit?: number): Promise<Debtor[]>;
   getRecentActivities(limit?: number): Promise<ActivityLog[]>;
+  getRecentActivityLogs(limit?: number): Promise<ActivityLog[]>;
+  getDebts(): Promise<Debt[]>;
   
   // Payments (Abonos)
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -635,6 +637,16 @@ export class MemStorage implements IStorage {
     return Array.from(this.activityLogs.values())
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, limit);
+  }
+
+  async getRecentActivityLogs(limit: number = 50): Promise<ActivityLog[]> {
+    return Array.from(this.activityLogs.values())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, limit);
+  }
+
+  async getDebts(): Promise<Debt[]> {
+    return Array.from(this.debts.values());
   }
 
   // Seed initial data for demonstration
@@ -1724,6 +1736,14 @@ export class DatabaseStorage implements IStorage {
 
   async getRecentActivities(limit: number = 5): Promise<ActivityLog[]> {
     return await db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(limit);
+  }
+
+  async getRecentActivityLogs(limit: number = 50): Promise<ActivityLog[]> {
+    return await db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(limit);
+  }
+
+  async getDebts(): Promise<Debt[]> {
+    return await db.select().from(debts);
   }
 }
 

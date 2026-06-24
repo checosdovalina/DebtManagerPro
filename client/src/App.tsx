@@ -16,6 +16,7 @@ import NewDebtorPage from "@/pages/debtors/new";
 import UsersPage from "@/pages/users/index";
 import ReportsPage from "@/pages/reports/index";
 import ManagementPage from "@/pages/management/index";
+import CalculadoraPage from "@/pages/calculadora";
 import { ProtectedRoute } from "./lib/auth";
 
 function Router() {
@@ -110,6 +111,12 @@ function Router() {
       <Route path="/management">
         <ProtectedRoute>
           <ManagementPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/calculadora">
+        <ProtectedRoute>
+          <CalculadoraPage />
         </ProtectedRoute>
       </Route>
       

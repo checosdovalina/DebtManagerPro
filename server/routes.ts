@@ -971,5 +971,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // BÚSQUEDA GLOBAL
+  app.get("/api/search", isAuthenticated, async (req, res) => {
+    try {
+      const q = ((req.query.q as string) || "").trim().toLowerCase();
+      if (!q || q.length < 2) return res.json({ clients: [], debtors: [], debts: [] });
+
+      const [allClients, allDebtors, allDebts] = await Promise.all([
+        storage.getClients(),
+        storage.getDebtors(),
+        storage.getDebts ? storage.getDebts() : Promise.resolve([]),
+      ]);
+
+      const clients = allClients
+        .filter(c => c.name.toLowerCase().includes(q) || c.rfc?.toLowerCase().includes(q))
+        .slice(0, 5)
+        .map(c => ({ id: c.id, label: c.name, sub: c.rfc || "", type: "client" }));
+
+      const debtors = allDebtors
+        .filter(d => d.name.toLowerCase().includes(q) || d.rfc?.toLowerCase().includes(q) || d.phone?.includes(q))
+        .slice(0, 5)
+        .map(d => ({ id: d.id, label: d.name, sub: d.rfc || d.phone || "", type: "debtor" }));
+
+      const debts = (allDebts as any[])
+        .filter((d: any) => d.concept?.toLowerCase().includes(q))
+        .slice(0, 5)
+        .map((d: any) => ({ id: d.id, label: d.concept, sub: `$${Number(d.currentAmount).toLocaleString('es-MX')}`, type: "debt" }));
+
+      res.json({ clients, debtors, debts });
+    } catch (error) {
+      res.status(500).json({ message: "Error en búsqueda" });
+    }
+  });
+
+  // ESTADÍSTICAS ENRIQUECIDAS PARA DASHBOARD
+  app.get("/api/dashboard/chart-data", isAuthenticated, async (req, res) => {
+    try {
+      const allDebtors = await storage.getDebtors();
+      const allDebts = await storage.getDebts ? await storage.getDebts() : [];
+
+      // Deudores por estado
+      const statusMap: Record<string, number> = {};
+      for (const d of allDebtors) {
+        statusMap[d.status] = (statusMap[d.status] || 0) + 1;
+      }
+      const debtorsByStatus = [
+        { name: "Nuevo", value: statusMap["new"] || 0, fill: "#3b82f6" },
+        { name: "En gestión", value: statusMap["in_management"] || 0, fill: "#f59e0b" },
+        { name: "Prometedor", value: statusMap["promising"] || 0, fill: "#8b5cf6" },
+        { name: "Pagado", value: statusMap["paid"] || 0, fill: "#10b981" },
+        { name: "Judicial", value: statusMap["in_litigation"] || 0, fill: "#ef4444" },
+        { name: "Cancelado", value: statusMap["canceled"] || 0, fill: "#6b7280" },
+      ].filter(s => s.value > 0);
+
+      // Cobranza simulada por mes (últimos 6 meses)
+      const now = new Date();
+      const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      const monthlyData = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        const label = months[d.getMonth()];
+        const payments = (allDebts as any[])
+          .filter((debt: any) => {
+            const upd = new Date(debt.updatedAt || debt.createdAt);
+            return upd.getFullYear() === d.getFullYear() && upd.getMonth() === d.getMonth();
+          })
+          .reduce((sum: number, debt: any) => sum + (Number(debt.originalAmount) - Number(debt.currentAmount)), 0);
+        return { mes: label, cobranza: Math.round(payments), meta: 50000 };
+      });
+
+      // Resumen de cartera
+      const totalOriginal = (allDebts as any[]).reduce((s: number, d: any) => s + Number(d.originalAmount), 0);
+      const totalCurrent = (allDebts as any[]).reduce((s: number, d: any) => s + Number(d.currentAmount), 0);
+      const totalRecovered = totalOriginal - totalCurrent;
+      const recoveryRate = totalOriginal > 0 ? Math.round((totalRecovered / totalOriginal) * 100) : 0;
+
+      res.json({ debtorsByStatus, monthlyData, totalOriginal, totalCurrent, totalRecovered, recoveryRate });
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener datos del dashboard" });
+    }
+  });
+
+  // PRÓXIMAS ACCIONES (alertas/pendientes)
+  app.get("/api/dashboard/upcoming-actions", isAuthenticated, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const allLogs = await storage.getRecentActivityLogs(50);
+      const today = new Date().toISOString().split("T")[0];
+
+      const upcoming = allLogs
+        .filter(l => l.nextActionDate && l.nextActionDate >= today)
+        .sort((a, b) => (a.nextActionDate! > b.nextActionDate! ? 1 : -1))
+        .slice(0, 10);
+
+      res.json(upcoming);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener acciones pendientes" });
+    }
+  });
+
   return httpServer;
 }
