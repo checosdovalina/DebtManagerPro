@@ -270,6 +270,30 @@ export const clientBankingInfo = pgTable("client_banking_info", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// NOTIFICATIONS TABLE
+export const NOTIFICATION_TYPE = {
+  PAYMENT_DUE: "payment_due",
+  PROMISE_FOLLOW_UP: "promise_follow_up",
+  NEXT_ACTION: "next_action",
+  NEW_ASSIGNMENT: "new_assignment",
+  STATUS_CHANGE: "status_change",
+  SYSTEM: "system",
+} as const;
+
+export type NotificationType = typeof NOTIFICATION_TYPE[keyof typeof NOTIFICATION_TYPE];
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull().$type<NotificationType>(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").notNull().default(false),
+  entityType: text("entity_type"),
+  entityId: integer("entity_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // PAYMENTS TABLE (ABONOS)
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
@@ -297,6 +321,7 @@ export const insertClientReportSchema = createInsertSchema(clientReports).omit({
 export const insertClientContactSchema = createInsertSchema(clientContacts).omit({ id: true, createdAt: true });
 export const insertClientBankingInfoSchema = createInsertSchema(clientBankingInfo).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPaymentSchema = createInsertSchema(payments).omit({ id: true, createdAt: true });
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 
 // TYPES
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -311,6 +336,7 @@ export type InsertClientReport = z.infer<typeof insertClientReportSchema>;
 export type InsertClientContact = z.infer<typeof insertClientContactSchema>;
 export type InsertClientBankingInfo = z.infer<typeof insertClientBankingInfoSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -324,3 +350,4 @@ export type ClientReport = typeof clientReports.$inferSelect;
 export type ClientContact = typeof clientContacts.$inferSelect;
 export type ClientBankingInfo = typeof clientBankingInfo.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;

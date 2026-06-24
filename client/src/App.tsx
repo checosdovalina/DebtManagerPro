@@ -17,6 +17,8 @@ import UsersPage from "@/pages/users/index";
 import ReportsPage from "@/pages/reports/index";
 import ManagementPage from "@/pages/management/index";
 import CalculadoraPage from "@/pages/calculadora";
+import ImportacionPage from "@/pages/importacion";
+import ReportesPage from "@/pages/reportes";
 import { ProtectedRoute } from "./lib/auth";
 
 function Router() {
@@ -117,6 +119,18 @@ function Router() {
       <Route path="/calculadora">
         <ProtectedRoute>
           <CalculadoraPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/importacion">
+        <ProtectedRoute>
+          <ImportacionPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/reportes">
+        <ProtectedRoute>
+          <ReportesPage />
         </ProtectedRoute>
       </Route>
       

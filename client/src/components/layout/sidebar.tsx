@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { GlobalSearch } from "./global-search";
+import { NotificationsBell } from "./notifications-bell";
 
 interface NavItemProps {
   href: string;
@@ -81,9 +82,12 @@ export const Sidebar: React.FC = () => {
             <img src="/logo.png" alt="DCS" className="h-8" />
             <h1 className="text-xl font-bold tracking-tight">DCS</h1>
           </div>
-          <button className="md:hidden text-gray-400 hover:text-white" onClick={closeMobile}>
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
+            <button className="md:hidden text-gray-400 hover:text-white" onClick={closeMobile}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -163,14 +167,19 @@ export const Sidebar: React.FC = () => {
               isActive={location.startsWith("/reports")}
               onClick={closeMobile} />
 
+            <NavItem href="/reportes" label="Reportes y Exportación"
+              icon={<BarChart className="h-5 w-5" />}
+              isActive={location === "/reportes"}
+              onClick={closeMobile} />
+
             <NavItem href="/calculadora" label="Calculadora"
               icon={<Calculator className="h-5 w-5" />}
               isActive={location === "/calculadora"}
               onClick={closeMobile} />
 
-            <NavItem href="/documents" label="Documentos"
+            <NavItem href="/importacion" label="Importación Masiva"
               icon={<FileText className="h-5 w-5" />}
-              isActive={location === "/documents"}
+              isActive={location === "/importacion"}
               onClick={closeMobile} />
 
             {/* Administración dropdown (solo admins) */}

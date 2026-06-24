@@ -19,6 +19,7 @@ import {
   insertClientReportSchema,
   insertClientContactSchema,
   insertClientBankingInfoSchema,
+  insertNotificationSchema,
   USER_ROLES
 } from "@shared/schema";
 
@@ -1067,6 +1068,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Error al obtener acciones pendientes" });
     }
+  });
+
+  // ─── NOTIFICACIONES ────────────────────────────────────────────────────────
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const list = await storage.getNotifications(userId);
+      res.json(list);
+    } catch { res.status(500).json({ message: "Error al obtener notificaciones" }); }
+  });
+
+  app.get("/api/notifications/unread-count", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const count = await storage.getUnreadNotificationsCount(userId);
+      res.json({ count });
+    } catch { res.status(500).json({ message: "Error" }); }
+  });
+
+  app.post("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const parsed = insertNotificationSchema.parse({ ...req.body, userId });
+      const notif = await storage.createNotification(parsed);
+      res.status(201).json(notif);
+    } catch (e: any) {
+      res.status(400).json({ message: e.message || "Error al crear notificación" });
+    }
+  });
+
+  app.patch("/api/notifications/:id/read", isAuthenticated, async (req, res) => {
+    try {
+      const notif = await storage.markNotificationRead(Number(req.params.id));
+      if (!notif) return res.status(404).json({ message: "No encontrada" });
+      res.json(notif);
+    } catch { res.status(500).json({ message: "Error" }); }
+  });
+
+  app.post("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      await storage.markAllNotificationsRead(userId);
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Error" }); }
+  });
+
+  app.delete("/api/notifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const ok = await storage.deleteNotification(Number(req.params.id));
+      if (!ok) return res.status(404).json({ message: "No encontrada" });
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Error" }); }
+  });
+
+  // ─── IMPORTACIÓN MASIVA ────────────────────────────────────────────────────
+  app.post("/api/import/debtors", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, rows } = req.body as { clientId: number; rows: Record<string, string>[] };
+      if (!clientId || !Array.isArray(rows)) return res.status(400).json({ message: "clientId y rows son requeridos" });
+
+      const today = new Date().toISOString().split("T")[0];
+      const debtorsToCreate = rows.map(r => ({
+        name: r["name"] || r["Nombre"] || r[Object.keys(r)[0]] || "",
+        rfc: r["rfc"] || r["RFC"] || null,
+        curp: null,
+        personType: "individual" as const,
+        street: r["street"] || r["Calle"] || null,
+        colony: r["colony"] || r["Colonia"] || null,
+        zipCode: r["zipCode"] || r["Código Postal"] || null,
+        city: r["city"] || r["Ciudad"] || null,
+        state: r["state"] || r["Estado"] || null,
+        phone: r["phone"] || r["Teléfono"] || null,
+        email: r["email"] || r["Email"] || null,
+        contactName: null,
+        clientId: Number(clientId),
+        assignedUserId: (req.user as any).id,
+        status: "new" as const,
+        notes: null,
+      }));
+
+      const createdDebtors = await storage.bulkCreateDebtors(debtorsToCreate);
+
+      const debtsToCreate = createdDebtors.map((debtor, i) => {
+        const r = rows[i];
+        const amtStr = r["originalAmount"] || r["Monto Original"] || "0";
+        const amount = parseFloat(String(amtStr).replace(/[^0-9.]/g, "")) || 0;
+        const dueDate = r["dueDate"] || r["Fecha Vencimiento"] || today;
+        const startDate = r["startDate"] || r["Fecha Inicio"] || today;
+        return {
+          debtorId: debtor.id,
+          concept: r["concept"] || r["Concepto"] || "Adeudo importado",
+          originalAmount: amount,
+          currentAmount: amount,
+          startDate,
+          dueDate,
+          interest: null,
+          debtType: "other" as const,
+          supportDocuments: null,
+          notes: null,
+        };
+      }).filter(d => d.originalAmount > 0);
+
+      if (debtsToCreate.length > 0) await storage.bulkCreateDebts(debtsToCreate);
+
+      // Notificación de importación completada
+      await storage.createNotification({
+        userId: (req.user as any).id,
+        type: "system",
+        title: "Importación completada",
+        message: `Se importaron ${createdDebtors.length} deudores correctamente.`,
+        read: false,
+        entityType: "import",
+        entityId: null,
+      });
+
+      res.json({ imported: createdDebtors.length, debtsCreated: debtsToCreate.length });
+    } catch (e: any) {
+      console.error("Error en importación:", e);
+      res.status(500).json({ message: e.message || "Error en importación" });
+    }
+  });
+
+  // ─── EXPORTACIÓN DE DATOS ─────────────────────────────────────────────────
+  app.get("/api/export/debtors", isAuthenticated, async (req, res) => {
+    try {
+      const allDebtors = await storage.getDebtors();
+      const allClients = await storage.getClients();
+      const clientMap = new Map(allClients.map(c => [c.id, c.name]));
+
+      const data = allDebtors.map(d => ({
+        ID: d.id,
+        Nombre: d.name,
+        RFC: d.rfc || "",
+        Cliente: clientMap.get(d.clientId) || "",
+        Teléfono: d.phone || "",
+        Email: d.email || "",
+        Estado: d.status,
+        Ciudad: d.city || "",
+        "Código Postal": d.zipCode || "",
+        "Fecha Registro": d.createdAt ? new Date(d.createdAt).toLocaleDateString("es-MX") : "",
+      }));
+
+      res.json(data);
+    } catch { res.status(500).json({ message: "Error al exportar" }); }
+  });
+
+  app.get("/api/export/debts", isAuthenticated, async (req, res) => {
+    try {
+      const allDebts = await storage.getDebts();
+      const allDebtors = await storage.getDebtors();
+      const debtorMap = new Map(allDebtors.map(d => [d.id, d.name]));
+
+      const data = allDebts.map(d => ({
+        ID: d.id,
+        Deudor: debtorMap.get(d.debtorId) || "",
+        Concepto: d.concept,
+        "Monto Original": d.originalAmount,
+        "Saldo Actual": d.currentAmount,
+        "Tipo": d.debtType,
+        "Fecha Inicio": d.startDate,
+        "Fecha Vencimiento": d.dueDate,
+        "Interés (%)": d.interest || 0,
+      }));
+
+      res.json(data);
+    } catch { res.status(500).json({ message: "Error al exportar" }); }
   });
 
   return httpServer;

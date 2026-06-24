@@ -11,6 +11,7 @@ import {
   clientContacts, type ClientContact, type InsertClientContact,
   clientBankingInfo, type ClientBankingInfo, type InsertClientBankingInfo,
   payments, type Payment, type InsertPayment,
+  notifications, type Notification, type InsertNotification,
   USER_ROLES
 } from "@shared/schema";
 
@@ -127,6 +128,18 @@ export interface IStorage {
   getPaymentsByDebtId(debtId: number): Promise<Payment[]>;
   getPayment(id: number): Promise<Payment | undefined>;
   updateDebtAmountAfterPayment(debtId: number, newAmount: number): Promise<Debt | undefined>;
+
+  // Notifications
+  getNotifications(userId: number): Promise<Notification[]>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationRead(id: number): Promise<Notification | undefined>;
+  markAllNotificationsRead(userId: number): Promise<void>;
+  deleteNotification(id: number): Promise<boolean>;
+
+  // Bulk import
+  bulkCreateDebtors(debtors: InsertDebtor[]): Promise<Debtor[]>;
+  bulkCreateDebts(debts: InsertDebt[]): Promise<Debt[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -142,6 +155,7 @@ export class MemStorage implements IStorage {
   private clientContacts: Map<number, ClientContact>;
   private clientBankingInfos: Map<number, ClientBankingInfo>;
   private payments: Map<number, Payment>;
+  private notificationsMap: Map<number, Notification>;
 
   private userIdCounter: number;
   private clientIdCounter: number;
@@ -155,6 +169,7 @@ export class MemStorage implements IStorage {
   private clientReportIdCounter: number;
   private clientContactIdCounter: number;
   private clientBankingInfoIdCounter: number;
+  private notificationIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -169,6 +184,7 @@ export class MemStorage implements IStorage {
     this.clientContacts = new Map();
     this.clientBankingInfos = new Map();
     this.payments = new Map();
+    this.notificationsMap = new Map();
 
     this.userIdCounter = 1;
     this.clientIdCounter = 1;
@@ -182,6 +198,7 @@ export class MemStorage implements IStorage {
     this.clientContactIdCounter = 1;
     this.clientBankingInfoIdCounter = 1;
     this.paymentIdCounter = 1;
+    this.notificationIdCounter = 1;
 
     // Seed data
     this.seedData();
@@ -1744,6 +1761,52 @@ export class DatabaseStorage implements IStorage {
 
   async getDebts(): Promise<Debt[]> {
     return await db.select().from(debts);
+  }
+
+  async getNotifications(userId: number): Promise<Notification[]> {
+    return Array.from(this.notificationsMap.values())
+      .filter(n => n.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    return Array.from(this.notificationsMap.values())
+      .filter(n => n.userId === userId && !n.read).length;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const id = this.notificationIdCounter++;
+    const newNotification: Notification = { ...notification, id, createdAt: new Date(), read: notification.read ?? false };
+    this.notificationsMap.set(id, newNotification);
+    return newNotification;
+  }
+
+  async markNotificationRead(id: number): Promise<Notification | undefined> {
+    const n = this.notificationsMap.get(id);
+    if (!n) return undefined;
+    const updated = { ...n, read: true };
+    this.notificationsMap.set(id, updated);
+    return updated;
+  }
+
+  async markAllNotificationsRead(userId: number): Promise<void> {
+    for (const [id, n] of this.notificationsMap.entries()) {
+      if (n.userId === userId) {
+        this.notificationsMap.set(id, { ...n, read: true });
+      }
+    }
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    return this.notificationsMap.delete(id);
+  }
+
+  async bulkCreateDebtors(debtorsList: InsertDebtor[]): Promise<Debtor[]> {
+    return Promise.all(debtorsList.map(d => this.createDebtor(d)));
+  }
+
+  async bulkCreateDebts(debtsList: InsertDebt[]): Promise<Debt[]> {
+    return Promise.all(debtsList.map(d => this.createDebt(d)));
   }
 }
 
