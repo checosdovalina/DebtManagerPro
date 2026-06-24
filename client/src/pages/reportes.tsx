@@ -208,32 +208,34 @@ export default function ReportesPage() {
                 <CardDescription>{report.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="outline"
-                    className="flex-1 text-green-700 border-green-300 hover:bg-green-50"
+                    size="sm"
+                    className="w-full text-green-700 border-green-300 hover:bg-green-50 text-xs"
                     onClick={() => exportToExcel(report.id)}
                     disabled={loadingReport === report.id}
                   >
                     {loadingReport === report.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                     ) : (
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
                     )}
-                    Exportar Excel
+                    Excel
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 text-red-700 border-red-300 hover:bg-red-50"
+                    size="sm"
+                    className="w-full text-red-700 border-red-300 hover:bg-red-50 text-xs"
                     onClick={() => exportToPDF(report.id)}
                     disabled={loadingReport === report.id}
                   >
                     {loadingReport === report.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                     ) : (
-                      <FileText className="h-4 w-4 mr-2" />
+                      <FileText className="h-3.5 w-3.5 mr-1.5" />
                     )}
-                    Exportar PDF
+                    PDF
                   </Button>
                 </div>
               </CardContent>

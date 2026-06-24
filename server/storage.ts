@@ -666,6 +666,52 @@ export class MemStorage implements IStorage {
     return Array.from(this.debts.values());
   }
 
+  async getNotifications(userId: number): Promise<Notification[]> {
+    return Array.from(this.notificationsMap.values())
+      .filter(n => n.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    return Array.from(this.notificationsMap.values())
+      .filter(n => n.userId === userId && !n.read).length;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const id = this.notificationIdCounter++;
+    const newNotification: Notification = { ...notification, id, createdAt: new Date(), read: notification.read ?? false };
+    this.notificationsMap.set(id, newNotification);
+    return newNotification;
+  }
+
+  async markNotificationRead(id: number): Promise<Notification | undefined> {
+    const n = this.notificationsMap.get(id);
+    if (!n) return undefined;
+    const updated = { ...n, read: true };
+    this.notificationsMap.set(id, updated);
+    return updated;
+  }
+
+  async markAllNotificationsRead(userId: number): Promise<void> {
+    for (const [id, n] of this.notificationsMap.entries()) {
+      if (n.userId === userId) {
+        this.notificationsMap.set(id, { ...n, read: true });
+      }
+    }
+  }
+
+  async deleteNotification(id: number): Promise<boolean> {
+    return this.notificationsMap.delete(id);
+  }
+
+  async bulkCreateDebtors(debtorsList: InsertDebtor[]): Promise<Debtor[]> {
+    return Promise.all(debtorsList.map(d => this.createDebtor(d)));
+  }
+
+  async bulkCreateDebts(debtsList: InsertDebt[]): Promise<Debt[]> {
+    return Promise.all(debtsList.map(d => this.createDebt(d)));
+  }
+
   // Seed initial data for demonstration
   private seedData() {
     // Create users
@@ -1763,51 +1809,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(debts);
   }
 
-  async getNotifications(userId: number): Promise<Notification[]> {
-    return Array.from(this.notificationsMap.values())
-      .filter(n => n.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async getUnreadNotificationsCount(userId: number): Promise<number> {
-    return Array.from(this.notificationsMap.values())
-      .filter(n => n.userId === userId && !n.read).length;
-  }
-
-  async createNotification(notification: InsertNotification): Promise<Notification> {
-    const id = this.notificationIdCounter++;
-    const newNotification: Notification = { ...notification, id, createdAt: new Date(), read: notification.read ?? false };
-    this.notificationsMap.set(id, newNotification);
-    return newNotification;
-  }
-
-  async markNotificationRead(id: number): Promise<Notification | undefined> {
-    const n = this.notificationsMap.get(id);
-    if (!n) return undefined;
-    const updated = { ...n, read: true };
-    this.notificationsMap.set(id, updated);
-    return updated;
-  }
-
-  async markAllNotificationsRead(userId: number): Promise<void> {
-    for (const [id, n] of this.notificationsMap.entries()) {
-      if (n.userId === userId) {
-        this.notificationsMap.set(id, { ...n, read: true });
-      }
-    }
-  }
-
-  async deleteNotification(id: number): Promise<boolean> {
-    return this.notificationsMap.delete(id);
-  }
-
-  async bulkCreateDebtors(debtorsList: InsertDebtor[]): Promise<Debtor[]> {
-    return Promise.all(debtorsList.map(d => this.createDebtor(d)));
-  }
-
-  async bulkCreateDebts(debtsList: InsertDebt[]): Promise<Debt[]> {
-    return Promise.all(debtsList.map(d => this.createDebt(d)));
-  }
+  async getNotifications(_userId: number): Promise<Notification[]> { return []; }
+  async getUnreadNotificationsCount(_userId: number): Promise<number> { return 0; }
+  async createNotification(n: InsertNotification): Promise<Notification> { throw new Error("Not implemented"); }
+  async markNotificationRead(_id: number): Promise<Notification | undefined> { return undefined; }
+  async markAllNotificationsRead(_userId: number): Promise<void> {}
+  async deleteNotification(_id: number): Promise<boolean> { return false; }
+  async bulkCreateDebtors(_list: InsertDebtor[]): Promise<Debtor[]> { return []; }
+  async bulkCreateDebts(_list: InsertDebt[]): Promise<Debt[]> { return []; }
 }
 
 // Usar MemStorage para el desarrollo/pruebas hasta que la base de datos esté completamente configurada
