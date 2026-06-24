@@ -39,6 +39,7 @@ import {
   type Client,
   type User
 } from "@shared/schema";
+import { usePostalCode } from "@/hooks/use-postal-code";
 
 // Extended schema with validations
 const debtorFormSchema = insertDebtorSchema
@@ -101,6 +102,8 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
       notes: initialData?.notes || "",
     } as DebtorFormSchema,
   });
+
+  const { handleZipChange } = usePostalCode(form as any);
 
   const createMutation = useMutation({
     mutationFn: async (data: DebtorFormSchema) => {
@@ -371,31 +374,11 @@ export const DebtorForm: React.FC<DebtorFormProps> = ({
                       <FormItem>
                         <FormLabel>Código Postal</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="CP" 
-                            {...field} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              const cp = e.target.value;
-                              // Consultar solo cuando se ingresan 5 dígitos
-                              if (cp.length === 5) {
-                                import('@/lib/postalCodeService').then(({ getPostalCodeData }) => {
-                                  getPostalCodeData(cp).then(data => {
-                                    if (data) {
-                                      // Actualizar automáticamente los campos
-                                      form.setValue('state', data.estado);
-                                      form.setValue('city', data.municipio);
-                                      form.setValue('colony', data.colonia || form.getValues('colony'));
-                                      toast({
-                                        title: "Información actualizada",
-                                        description: `Se completó la información de ${data.municipio}, ${data.estado}`,
-                                        duration: 3000,
-                                      });
-                                    }
-                                  });
-                                });
-                              }
-                            }}
+                          <Input
+                            placeholder="CP"
+                            maxLength={5}
+                            {...field}
+                            onChange={(e) => handleZipChange(e.target.value)}
                           />
                         </FormControl>
                         <FormMessage />

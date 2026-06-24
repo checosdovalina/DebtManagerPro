@@ -32,6 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertClientSchema, PERSON_TYPE, CLIENT_STATUS, type Client } from "@shared/schema";
+import { usePostalCode } from "@/hooks/use-postal-code";
 
 // Extended schema with validations
 const clientFormSchema = insertClientSchema
@@ -81,6 +82,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({
       notes: initialData?.notes || "",
     } as ClientFormSchema,
   });
+
+  const { handleZipChange } = usePostalCode(form as any);
 
   const createMutation = useMutation({
     mutationFn: async (data: ClientFormSchema) => {
@@ -308,32 +311,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({
                       <FormItem>
                         <FormLabel>Código Postal</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="CP" 
-                            {...field} 
-                            onChange={(e) => {
-                              field.onChange(e);
-                              // Solo consultar cuando se hayan introducido 5 dígitos
-                              const cp = e.target.value;
-                              if (cp.length === 5) {
-                                // Importación dinámica para no bloquear la carga inicial
-                                import('@/lib/postalCodeService').then(({ getPostalCodeData }) => {
-                                  getPostalCodeData(cp).then(data => {
-                                    if (data) {
-                                      // Actualizar los campos de estado y ciudad automáticamente
-                                      form.setValue('state', data.estado);
-                                      form.setValue('city', data.municipio);
-                                      form.setValue('colony', data.colonia || form.getValues('colony'));
-                                      toast({
-                                        title: "Datos actualizados",
-                                        description: `Se completó la información de ${data.municipio}, ${data.estado}`,
-                                        duration: 3000,
-                                      });
-                                    }
-                                  });
-                                });
-                              }
-                            }}
+                          <Input
+                            placeholder="CP"
+                            maxLength={5}
+                            {...field}
+                            onChange={(e) => handleZipChange(e.target.value)}
                           />
                         </FormControl>
                         <FormMessage />

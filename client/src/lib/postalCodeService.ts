@@ -1,184 +1,215 @@
-// Servicio para consultar información de códigos postales en México
-
-interface PostalCodeData {
-  cp: string;           // Código postal
-  estado: string;       // Estado
-  municipio: string;    // Municipio o Ciudad
-  colonia: string;      // Colonia
-  error?: boolean;      // Indicador de error
-  message?: string;     // Mensaje de error
+export interface PostalCodeData {
+  cp: string;
+  estado: string;
+  municipio: string;
+  colonia: string;
 }
 
-/**
- * Consulta información de un código postal mexicano
- * 
- * Utiliza la API pública de SEPOMEX (API Copomex)
- * 
- * @param postalCode - El código postal a consultar (5 dígitos)
- * @returns Información del código postal o error
- */
+// Rangos de códigos postales por ciudad/municipio
+// Formato: [desde, hasta, estado, municipio]
+const CP_RANGES: [number, number, string, string][] = [
+  // Ciudad de México
+  [1000,  1999,  'Ciudad de México', 'Álvaro Obregón'],
+  [2000,  2999,  'Ciudad de México', 'Álvaro Obregón'],
+  [3000,  3999,  'Ciudad de México', 'Benito Juárez'],
+  [4000,  4999,  'Ciudad de México', 'Coyoacán'],
+  [5000,  5999,  'Ciudad de México', 'Cuajimalpa'],
+  [6000,  6999,  'Ciudad de México', 'Cuauhtémoc'],
+  [7000,  7999,  'Ciudad de México', 'Gustavo A. Madero'],
+  [8000,  8999,  'Ciudad de México', 'Iztacalco'],
+  [9000,  9999,  'Ciudad de México', 'Iztapalapa'],
+  [10000, 10999, 'Ciudad de México', 'La Magdalena Contreras'],
+  [11000, 11999, 'Ciudad de México', 'Miguel Hidalgo'],
+  [12000, 12999, 'Ciudad de México', 'Milpa Alta'],
+  [13000, 13999, 'Ciudad de México', 'Tláhuac'],
+  [14000, 14999, 'Ciudad de México', 'Tlalpan'],
+  [15000, 15999, 'Ciudad de México', 'Venustiano Carranza'],
+  [16000, 16999, 'Ciudad de México', 'Xochimilco'],
+  // Estado de México
+  [50000, 50999, 'Estado de México', 'Toluca'],
+  [52000, 52999, 'Estado de México', 'Huixquilucan'],
+  [53000, 54999, 'Estado de México', 'Naucalpan'],
+  [55000, 55999, 'Estado de México', 'Ecatepec'],
+  [56000, 56999, 'Estado de México', 'Nezahualcóyotl'],
+  // Jalisco
+  [44000, 44999, 'Jalisco', 'Guadalajara'],
+  [45000, 45999, 'Jalisco', 'Zapopan'],
+  [46000, 46999, 'Jalisco', 'Lagos de Moreno'],
+  [47000, 47999, 'Jalisco', 'San Juan de los Lagos'],
+  [49000, 49999, 'Jalisco', 'Ciudad Guzmán'],
+  // Nuevo León
+  [64000, 64999, 'Nuevo León', 'Monterrey'],
+  [65000, 65999, 'Nuevo León', 'Linares'],
+  [66000, 66999, 'Nuevo León', 'San Nicolás de los Garza'],
+  [67000, 67999, 'Nuevo León', 'Guadalupe'],
+  // Coahuila - Torreón y La Laguna
+  [27000, 27299, 'Coahuila', 'Torreón'],
+  [27300, 27499, 'Coahuila', 'Gómez Palacio'],
+  [27500, 27999, 'Coahuila', 'Lerdo'],
+  [25000, 25999, 'Coahuila', 'Saltillo'],
+  [26000, 26999, 'Coahuila', 'Piedras Negras'],
+  // Durango
+  [34000, 34999, 'Durango', 'Durango'],
+  [35000, 35999, 'Durango', 'Gómez Palacio'],
+  // Puebla
+  [72000, 72999, 'Puebla', 'Puebla'],
+  [73000, 73999, 'Puebla', 'Tehuacán'],
+  // Querétaro
+  [76000, 76999, 'Querétaro', 'Querétaro'],
+  // San Luis Potosí
+  [78000, 78999, 'San Luis Potosí', 'San Luis Potosí'],
+  // Guanajuato
+  [36000, 36999, 'Guanajuato', 'Guanajuato'],
+  [37000, 37999, 'Guanajuato', 'León'],
+  [38000, 38999, 'Guanajuato', 'Irapuato'],
+  // Michoacán
+  [58000, 58999, 'Michoacán', 'Morelia'],
+  [59000, 59999, 'Michoacán', 'Zamora'],
+  // Guerrero
+  [39000, 39999, 'Guerrero', 'Chilpancingo'],
+  [40000, 40999, 'Guerrero', 'Iguala'],
+  // Hidalgo
+  [42000, 42999, 'Hidalgo', 'Pachuca'],
+  [43000, 43999, 'Hidalgo', 'Tula'],
+  // Morelos
+  [62000, 62999, 'Morelos', 'Cuernavaca'],
+  // Yucatán
+  [97000, 97999, 'Yucatán', 'Mérida'],
+  // Chihuahua
+  [31000, 31999, 'Chihuahua', 'Chihuahua'],
+  [32000, 32999, 'Chihuahua', 'Ciudad Juárez'],
+  // Sonora
+  [83000, 83999, 'Sonora', 'Hermosillo'],
+  [84000, 84999, 'Sonora', 'Nogales'],
+  // Baja California
+  [21000, 21999, 'Baja California', 'Mexicali'],
+  [22000, 22999, 'Baja California', 'Tijuana'],
+  [23000, 23999, 'Baja California Sur', 'La Paz'],
+  // Sinaloa
+  [80000, 80999, 'Sinaloa', 'Culiacán'],
+  [82000, 82999, 'Sinaloa', 'Mazatlán'],
+  // Veracruz
+  [91000, 91999, 'Veracruz', 'Xalapa'],
+  [94000, 94999, 'Veracruz', 'Veracruz'],
+  // Tabasco
+  [86000, 86999, 'Tabasco', 'Villahermosa'],
+  // Chiapas
+  [29000, 29999, 'Chiapas', 'Tuxtla Gutiérrez'],
+  [30000, 30999, 'Chiapas', 'Tapachula'],
+  // Oaxaca
+  [68000, 68999, 'Oaxaca', 'Oaxaca de Juárez'],
+  // Aguascalientes
+  [20000, 20999, 'Aguascalientes', 'Aguascalientes'],
+  // Zacatecas
+  [98000, 98999, 'Zacatecas', 'Zacatecas'],
+  // Nayarit
+  [63000, 63999, 'Nayarit', 'Tepic'],
+  // Colima
+  [28000, 28999, 'Colima', 'Colima'],
+  // Tlaxcala
+  [90000, 90999, 'Tlaxcala', 'Tlaxcala'],
+  // Campeche
+  [24000, 24999, 'Campeche', 'Campeche'],
+  // Quintana Roo
+  [77000, 77999, 'Quintana Roo', 'Cancún'],
+];
+
+// Colonias específicas por código postal exacto
+const CP_COLONIAS: Record<string, string> = {
+  // Torreón
+  '27000': 'Centro', '27010': 'Moderna', '27018': 'Navarro', '27019': 'Torreón Jardín',
+  '27020': 'Estrella', '27023': 'Las Villas del Nogalar', '27025': 'Fuentes del Valle',
+  '27028': 'Residencial Punta del Este', '27029': 'Colinas de Santiago',
+  '27030': 'Antigua Aceitera', '27040': 'Los Ángeles', '27050': 'Los Ángeles',
+  '27058': 'Residencial La Hacienda', '27059': 'Las Margaritas',
+  '27060': 'Las Américas', '27065': 'Privadas de Anáhuac',
+  '27070': 'Cumbres Elite', '27075': 'Jardines de Anáhuac',
+  '27080': 'Reserva Santa Elena', '27083': 'Nueva Los Ángeles',
+  '27085': 'Las Villas', '27087': 'Hacienda del Bosque',
+  '27090': 'Fuentes del Bosque', '27095': 'Villa Olímpica',
+  '27100': 'Nueva Aurora', '27105': 'Antigua Aceitera',
+  '27110': 'Primero de Mayo', '27120': 'Lucio Blanco',
+  '27130': 'Valle Verde', '27140': 'Valle Oriente',
+  '27150': 'Valle Dorado', '27160': 'Rinconada Los Fresnos',
+  '27170': 'Villa California', '27180': 'Residencial del Norte',
+  '27190': 'Ampliación La Rosita', '27200': 'Abastos',
+  '27210': 'Torreón Residencial', '27220': 'Privadas de La Hacienda',
+  '27250': 'Alamedas', '27260': 'Quintas del Nazas',
+  '27268': 'Campestre La Rosita', '27270': 'La Rosita',
+  '27277': 'Senderos', '27280': 'San Isidro',
+  '27285': 'Nuevo San Isidro', '27290': 'Palmas San Isidro',
+  '27294': 'San Luciano', '27296': 'Villas de San Isidro',
+  '27298': 'Residencial Villa Jardín',
+  // CDMX
+  '06000': 'Centro Histórico', '06050': 'Tabacalera',
+  '06100': 'Hipódromo Condesa', '06140': 'Condesa',
+  '06500': 'Roma Norte', '06700': 'Roma Sur',
+  '11560': 'Polanco', '11590': 'Polanco Reforma',
+  '04100': 'Del Carmen', '09810': 'Santa Cruz Meyehualco',
+  // Guadalajara
+  '44160': 'Americana', '44600': 'Colonia Moderna',
+  // Monterrey
+  '64060': 'Obispado',
+  '66220': 'Valle', '66230': 'Del Valle',
+};
+
+// Caché en memoria para no relookup el mismo CP
+const cache = new Map<string, PostalCodeData>();
+
+function lookupByRange(cp: number): { estado: string; municipio: string } | null {
+  for (const [from, to, estado, municipio] of CP_RANGES) {
+    if (cp >= from && cp <= to) return { estado, municipio };
+  }
+  return null;
+}
+
 export async function getPostalCodeData(postalCode: string): Promise<PostalCodeData | null> {
-  // Valida el formato del código postal (5 dígitos)
-  if (!/^\d{5}$/.test(postalCode)) {
-    console.error('Formato de código postal incorrecto. Debe ser 5 dígitos.');
-    return null;
+  if (!/^\d{5}$/.test(postalCode)) return null;
+
+  // Revisar caché primero
+  if (cache.has(postalCode)) return cache.get(postalCode)!;
+
+  const cpNum = parseInt(postalCode, 10);
+
+  // Búsqueda por rango local (cubre cualquier CP en rango, no solo exactos)
+  const rangeMatch = lookupByRange(cpNum);
+  if (rangeMatch) {
+    const result: PostalCodeData = {
+      cp: postalCode,
+      estado: rangeMatch.estado,
+      municipio: rangeMatch.municipio,
+      colonia: CP_COLONIAS[postalCode] || '',
+    };
+    cache.set(postalCode, result);
+    return result;
   }
 
-  // Primero intentamos con los datos de respaldo, que son más rápidos y confiables
-  const fallbackData = getFallbackPostalCodeData(postalCode);
-  if (fallbackData) {
-    console.log('Usando datos locales para el código postal:', postalCode);
-    return fallbackData;
-  }
-
-  // Si no tenemos datos locales, intentamos con la API
+  // Fallback: consultar API de Copomex
   try {
-    console.log('Consultando API para el código postal:', postalCode);
-    const response = await fetch(`https://api.copomex.com/query/info_cp/${postalCode}?type=simplified&token=pruebas`);
-    
-    if (!response.ok) {
-      console.error('Error al consultar el código postal:', response.statusText);
-      // Devolvemos datos genéricos para demostración
-      return {
-        cp: postalCode,
-        estado: 'México',
-        municipio: 'Ciudad o Municipio',
-        colonia: 'Colonia',
-      };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(
+      `https://api.copomex.com/query/info_cp/${postalCode}?type=simplified&token=pruebas`,
+      { signal: controller.signal }
+    );
+    clearTimeout(timeout);
+
+    if (response.ok) {
+      const data = await response.json();
+      if (!data.error && data.estado) {
+        const result: PostalCodeData = {
+          cp: postalCode,
+          estado: data.estado,
+          municipio: data.municipio || data.ciudad || '',
+          colonia: data.colonia || CP_COLONIAS[postalCode] || '',
+        };
+        cache.set(postalCode, result);
+        return result;
+      }
     }
-    
-    const data = await response.json();
-    
-    // Si hay un error en la respuesta
-    if (data.error) {
-      console.error('Error en la consulta:', data.message);
-      // Devolvemos datos genéricos para demostración
-      return {
-        cp: postalCode,
-        estado: 'México',
-        municipio: 'Ciudad o Municipio',
-        colonia: 'Colonia',
-      };
-    }
-    
-    return {
-      cp: postalCode,
-      estado: data.estado || '',
-      municipio: data.municipio || '',
-      colonia: data.colonia || '',
-    };
-  } catch (error) {
-    console.error('Error al consultar información del código postal:', error);
-    
-    // Devolvemos datos genéricos para demostración
-    return {
-      cp: postalCode,
-      estado: 'México',
-      municipio: 'Ciudad o Municipio',
-      colonia: 'Colonia',
-    };
+  } catch {
+    // timeout o error de red — ignorar silenciosamente
   }
-}
 
-/**
- * Proporciona datos de respaldo para algunos códigos postales comunes
- * en caso de que la API no esté disponible
- */
-function getFallbackPostalCodeData(postalCode: string): PostalCodeData | null {
-  const commonPostalCodes: Record<string, PostalCodeData> = {
-    // Ciudad de México y área metropolitana
-    '06000': { cp: '06000', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Centro Histórico' },
-    '06010': { cp: '06010', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Centro' },
-    '06050': { cp: '06050', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Tabacalera' },
-    '06100': { cp: '06100', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Hipódromo Condesa' },
-    '06140': { cp: '06140', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Condesa' },
-    '06500': { cp: '06500', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Roma Norte' },
-    '06700': { cp: '06700', estado: 'Ciudad de México', municipio: 'Cuauhtémoc', colonia: 'Roma Sur' },
-    '11000': { cp: '11000', estado: 'Ciudad de México', municipio: 'Miguel Hidalgo', colonia: 'Lomas de Chapultepec' },
-    '11560': { cp: '11560', estado: 'Ciudad de México', municipio: 'Miguel Hidalgo', colonia: 'Polanco' },
-    '11590': { cp: '11590', estado: 'Ciudad de México', municipio: 'Miguel Hidalgo', colonia: 'Polanco Reforma' },
-    '04000': { cp: '04000', estado: 'Ciudad de México', municipio: 'Coyoacán', colonia: 'Villa Coyoacán' },
-    '04100': { cp: '04100', estado: 'Ciudad de México', municipio: 'Coyoacán', colonia: 'Del Carmen' },
-    '07000': { cp: '07000', estado: 'Ciudad de México', municipio: 'Gustavo A. Madero', colonia: 'Aragón' },
-    '09000': { cp: '09000', estado: 'Ciudad de México', municipio: 'Iztapalapa', colonia: 'Iztapalapa Centro' },
-    '09810': { cp: '09810', estado: 'Ciudad de México', municipio: 'Iztapalapa', colonia: 'Santa Cruz Meyehualco' },
-    '54050': { cp: '54050', estado: 'Estado de México', municipio: 'Tlalnepantla', colonia: 'Tlalnepantla Centro' },
-    '53100': { cp: '53100', estado: 'Estado de México', municipio: 'Naucalpan', colonia: 'Ciudad Satélite' },
-    '52760': { cp: '52760', estado: 'Estado de México', municipio: 'Huixquilucan', colonia: 'Interlomas' },
-    '56600': { cp: '56600', estado: 'Estado de México', municipio: 'Chalco', colonia: 'Chalco Centro' },
-    
-    // Guadalajara
-    '44100': { cp: '44100', estado: 'Jalisco', municipio: 'Guadalajara', colonia: 'Centro' },
-    '44160': { cp: '44160', estado: 'Jalisco', municipio: 'Guadalajara', colonia: 'Americana' },
-    '44600': { cp: '44600', estado: 'Jalisco', municipio: 'Guadalajara', colonia: 'Colonia Moderna' },
-    '45100': { cp: '45100', estado: 'Jalisco', municipio: 'Zapopan', colonia: 'Zapopan Centro' },
-    '45050': { cp: '45050', estado: 'Jalisco', municipio: 'Zapopan', colonia: 'Las Águilas' },
-    
-    // Monterrey
-    '64000': { cp: '64000', estado: 'Nuevo León', municipio: 'Monterrey', colonia: 'Centro' },
-    '64060': { cp: '64060', estado: 'Nuevo León', municipio: 'Monterrey', colonia: 'Obispado' },
-    '66220': { cp: '66220', estado: 'Nuevo León', municipio: 'San Pedro Garza García', colonia: 'Valle' },
-    '66230': { cp: '66230', estado: 'Nuevo León', municipio: 'San Pedro Garza García', colonia: 'Del Valle' },
-    
-    // Otros centros urbanos importantes
-    '72000': { cp: '72000', estado: 'Puebla', municipio: 'Puebla', colonia: 'Centro' },
-    '72050': { cp: '72050', estado: 'Puebla', municipio: 'Puebla', colonia: 'La Paz' },
-    '97000': { cp: '97000', estado: 'Yucatán', municipio: 'Mérida', colonia: 'Centro' },
-    '97070': { cp: '97070', estado: 'Yucatán', municipio: 'Mérida', colonia: 'Itzimná' },
-    '31000': { cp: '31000', estado: 'Chihuahua', municipio: 'Chihuahua', colonia: 'Centro' },
-    '31100': { cp: '31100', estado: 'Chihuahua', municipio: 'Chihuahua', colonia: 'San Felipe' },
-    '22000': { cp: '22000', estado: 'Baja California', municipio: 'Tijuana', colonia: 'Centro' },
-    '83000': { cp: '83000', estado: 'Sonora', municipio: 'Hermosillo', colonia: 'Centro' },
-    '20000': { cp: '20000', estado: 'Aguascalientes', municipio: 'Aguascalientes', colonia: 'Centro' },
-    '34000': { cp: '34000', estado: 'Durango', municipio: 'Durango', colonia: 'Centro' },
-    '25000': { cp: '25000', estado: 'Coahuila', municipio: 'Saltillo', colonia: 'Centro' },
-    
-    // Códigos postales de Torreón, Coahuila
-    '27000': { cp: '27000', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Centro' },
-    '27010': { cp: '27010', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Moderna' },
-    '27018': { cp: '27018', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Navarro' },
-    '27019': { cp: '27019', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Torreón Jardín' },
-    '27020': { cp: '27020', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Estrella' },
-    '27030': { cp: '27030', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Antigua Aceitera' },
-    '27040': { cp: '27040', estado: 'Coahuila', municipio: 'Torreón', colonia: 'San Isidro' },
-    '27050': { cp: '27050', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Los Ángeles' },
-    '27058': { cp: '27058', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Residencial La Hacienda' },
-    '27059': { cp: '27059', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Las Margaritas' },
-    '27083': { cp: '27083', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Nueva Los Ángeles' },
-    '27085': { cp: '27085', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Las Villas' },
-    '27100': { cp: '27100', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Nueva Aurora' },
-    '27105': { cp: '27105', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Antigua Aceitera' },
-    '27110': { cp: '27110', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Primero de Mayo' },
-    '27120': { cp: '27120', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Lucio Blanco' },
-    '27130': { cp: '27130', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Valle Verde' },
-    '27140': { cp: '27140', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Valle Oriente' },
-    '27150': { cp: '27150', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Valle Dorado' },
-    '27170': { cp: '27170', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Villa California' },
-    '27180': { cp: '27180', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Residencial del Norte' },
-    '27190': { cp: '27190', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Ampliación La Rosita' },
-    '27200': { cp: '27200', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Abastos' },
-    '27250': { cp: '27250', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Alamedas' },
-    '27260': { cp: '27260', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Quintas del Nazas' },
-    '27268': { cp: '27268', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Campestre La Rosita' },
-    '27270': { cp: '27270', estado: 'Coahuila', municipio: 'Torreón', colonia: 'La Rosita' },
-    '27277': { cp: '27277', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Senderos' },
-    '27280': { cp: '27280', estado: 'Coahuila', municipio: 'Torreón', colonia: 'San Isidro' },
-    '27285': { cp: '27285', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Nuevo San Isidro' },
-    '27290': { cp: '27290', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Palmas San Isidro' },
-    '27294': { cp: '27294', estado: 'Coahuila', municipio: 'Torreón', colonia: 'San Luciano' },
-    '27296': { cp: '27296', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Villas de San Isidro' },
-    '27298': { cp: '27298', estado: 'Coahuila', municipio: 'Torreón', colonia: 'Residencial Villa Jardin' },
-    '42000': { cp: '42000', estado: 'Hidalgo', municipio: 'Pachuca', colonia: 'Centro' },
-    '58000': { cp: '58000', estado: 'Michoacán', municipio: 'Morelia', colonia: 'Centro' },
-    '62000': { cp: '62000', estado: 'Morelos', municipio: 'Cuernavaca', colonia: 'Centro' },
-    '76000': { cp: '76000', estado: 'Querétaro', municipio: 'Querétaro', colonia: 'Centro' },
-    '78000': { cp: '78000', estado: 'San Luis Potosí', municipio: 'San Luis Potosí', colonia: 'Centro' },
-    '86000': { cp: '86000', estado: 'Tabasco', municipio: 'Villahermosa', colonia: 'Centro' },
-    '91000': { cp: '91000', estado: 'Veracruz', municipio: 'Xalapa', colonia: 'Centro' },
-    '98000': { cp: '98000', estado: 'Zacatecas', municipio: 'Zacatecas', colonia: 'Centro' },
-    // Para prueba (código genérico)
-    '12345': { cp: '12345', estado: 'Estado de Prueba', municipio: 'Municipio de Prueba', colonia: 'Colonia de Prueba' },
-  };
-
-  return commonPostalCodes[postalCode] || null;
+  return null;
 }
