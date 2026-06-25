@@ -1,2 +1,3 @@
+- [Dev backend no auto-reload](dev-backend-no-autoreload.md) — `tsx server/index.ts` doesn't watch; backend route/edits need explicit workflow restart. API route returning HTML = stale server.
 - [Storage switch to DatabaseStorage](storage-database-switch.md) — storage was hardcoded to MemStorage; now environment-aware via DATABASE_URL check.
-- [DatabaseStorage stubs](database-storage-stubs.md) — createNotification and other methods were stubs/throws; all implemented with drizzle queries.
+- [DatabaseStorage stubs](database-storage-stubs.md) — createNotification and other methods were stubs/throws; implement in both MemStorage and DatabaseStorage.

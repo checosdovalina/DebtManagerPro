@@ -14,7 +14,7 @@ import {
   notifications, type Notification, type InsertNotification,
   paymentPromises, type PaymentPromise, type InsertPaymentPromise,
   messageTemplates, type MessageTemplate, type InsertMessageTemplate,
-  USER_ROLES
+  USER_ROLES, CLIENT_STATUS
 } from "@shared/schema";
 
 // Storage interface for all operations
@@ -1276,7 +1276,7 @@ export class MemStorage implements IStorage {
 }
 
 import { db } from './db';
-import { eq, desc, count, sum, gte, and } from 'drizzle-orm';
+import { eq, desc, count, sum, gte, lte, and, asc, isNotNull } from 'drizzle-orm';
 
 
 export class DatabaseStorage implements IStorage {
@@ -2030,8 +2030,10 @@ export class DatabaseStorage implements IStorage {
   // Pending Follow-ups
   async getPendingFollowups(userId?: number): Promise<any[]> {
     const query = db.select().from(activityLogs).where(
-      userId ? and(eq(activityLogs.userId, userId), eq(activityLogs.followUpRequired, true)) : eq(activityLogs.followUpRequired, true)
-    ).orderBy(activityLogs.followUpDate);
+      userId
+        ? and(eq(activityLogs.userId, userId), isNotNull(activityLogs.nextActionDate))
+        : isNotNull(activityLogs.nextActionDate)
+    ).orderBy(asc(activityLogs.nextActionDate));
     return await query;
   }
 }

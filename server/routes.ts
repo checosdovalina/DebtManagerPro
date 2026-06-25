@@ -1269,7 +1269,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).id;
       const today = new Date().toISOString().split("T")[0];
-      console.log(`[import/expediente] START body keys: ${Object.keys(req.body).join(",")}`);
 
       const {
         clientId: rawClientId,
@@ -1373,7 +1372,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "new" as const,
         notes: debtorData.notes || null,
       });
-      console.log(`[import/expediente] Deudor creado: id=${debtor.id} nombre="${debtor.name}" clientId=${debtor.clientId}`);
 
       // Create debts and track concept→id mapping
       let debtsCreated = 0;
