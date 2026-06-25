@@ -125,15 +125,16 @@ export function parseExpediente(
 
   const debtOriginals: { concept: string; amount: number }[] = [];
 
-  for (const slot of debtSlots) {
+  for (let slotI = 0; slotI < debtSlots.length; slotI++) {
+    const slot = debtSlots[slotI];
     let foundDebt = false;
     for (let ri = 0; ri < Math.min(adeudoRows.length, 5); ri++) {
       const row = adeudoRows[ri] as unknown[];
       const label = str(row[slot.colStart]);
       if (label.toLowerCase().includes("adeudo")) {
         const amount = Number(row[slot.amtCol]) || 0;
-        const concept = str(row[slot.conceptCol]);
-        if (amount > 0 && concept) {
+        const concept = str(row[slot.conceptCol]) || (slotI === 0 ? "ADEUDO" : `ADEUDO ${slotI + 1}`);
+        if (amount > 0) {
           debtOriginals.push({ concept, amount });
           foundDebt = true;
           break;
