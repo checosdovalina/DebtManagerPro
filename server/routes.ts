@@ -1372,6 +1372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "new" as const,
         notes: debtorData.notes || null,
       });
+      console.log(`[import/expediente] Deudor creado: id=${debtor.id} nombre="${debtor.name}" clientId=${debtor.clientId}`);
 
       // Create debts and track concept→id mapping
       let debtsCreated = 0;
@@ -1527,6 +1528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           const debtor = await storage.createDebtor(debtorData);
+          console.log(`[import/debtors] Deudor creado: id=${debtor.id} nombre="${debtor.name}"`);
 
           const amountRaw = r["originalAmount"] || r["Monto Original"] || r["Monto"] || "0";
           const amount = parseFloat(String(amountRaw).replace(/[,$]/g, "")) || 0;
