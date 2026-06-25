@@ -1067,7 +1067,7 @@ export class MemStorage implements IStorage {
     debtorId?: number;
     type?: string;
   }): Promise<ActivityLog[]> {
-    let logs = Object.values(this.activityLogsMap);
+    let logs = Array.from(this.activityLogs.values());
     
     // Apply filters
     if (options.userId) {

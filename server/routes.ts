@@ -1332,6 +1332,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.status(500).json({ message: "Error al eliminar plantilla" }); }
   });
 
+  // ─── ACTIVITIES LOGS (management module) ─────────────────────────────────
+  app.get("/api/activities/logs", isAuthenticated, async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const perPage = parseInt(req.query.perPage as string) || 10;
+      const typeFilter = req.query.type as string;
+      const entityType = req.query.entityType as string;
+      const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+      const dateFrom = req.query.dateFrom as string;
+      const dateTo = req.query.dateTo as string;
+
+      const [allUsers, allDebtors] = await Promise.all([
+        storage.getUsers(),
+        storage.getDebtors(),
+      ]);
+      const userMap = new Map((allUsers as any[]).map((u: any) => [u.id, u]));
+
+      // Collect from all debtors' activity logs
+      const allLogs: any[] = [];
+      for (const d of allDebtors) {
+        const dLogs = await storage.getActivityLogsByDebtor(d.id);
+        for (const log of dLogs) {
+          allLogs.push({
+            ...log,
+            entityType: "debtor",
+            entityId: d.id,
+            debtorName: d.name,
+          });
+        }
+      }
+
+      // Apply filters
+      let filtered = allLogs;
+      if (typeFilter && typeFilter !== "all") {
+        filtered = filtered.filter(l => l.contactType === typeFilter || l.contactType === typeFilter.replace("phone_call", "phone"));
+      }
+      if (entityType && entityType !== "all") {
+        filtered = filtered.filter(l => l.entityType === entityType);
+      }
+      if (userId) {
+        filtered = filtered.filter(l => l.userId === userId);
+      }
+      if (dateFrom) {
+        filtered = filtered.filter(l => (l.contactDate || "") >= dateFrom);
+      }
+      if (dateTo) {
+        filtered = filtered.filter(l => (l.contactDate || "") <= dateTo);
+      }
+
+      // Sort newest first
+      filtered.sort((a, b) => {
+        const da = a.contactDate || "";
+        const db = b.contactDate || "";
+        return db.localeCompare(da);
+      });
+
+      const total = filtered.length;
+      const offset = (page - 1) * perPage;
+      const paginated = filtered.slice(offset, offset + perPage);
+
+      const contactTypeToType: Record<string, string> = {
+        phone: "phone_call",
+        whatsapp: "note",
+        email: "note",
+        visit: "visit",
+        letter: "document",
+        other: "note",
+      };
+
+      const mapped = paginated.map(l => {
+        const user = userMap.get(l.userId);
+        return {
+          id: l.id,
+          createdAt: l.contactDate ? `${l.contactDate}T00:00:00.000Z` : new Date().toISOString(),
+          type: contactTypeToType[l.contactType] || "note",
+          entityType: l.entityType || "debtor",
+          entityId: l.entityId || l.debtorId,
+          description: [l.result, l.notes].filter(Boolean).join(" — ") || "Sin descripción",
+          additionalData: l.nextAction ? { nextAction: l.nextAction, nextActionDate: l.nextActionDate } : null,
+          user: { fullName: user?.fullName || "Usuario desconocido" },
+          debtorName: l.debtorName,
+        };
+      });
+
+      res.json({ logs: mapped, total });
+    } catch (err) {
+      console.error("activities/logs error:", err);
+      res.status(500).json({ message: "Error al obtener actividades", logs: [], total: 0 });
+    }
+  });
+
+  // ─── ACTIVITIES CALENDAR ──────────────────────────────────────────────────
+  app.get("/api/activities/calendar", isAuthenticated, async (req, res) => {
+    try {
+      const startDate = req.query.start as string;
+      const endDate = req.query.end as string;
+
+      const debtorList = await storage.getDebtors();
+
+      const events: any[] = [];
+
+      for (const d of debtorList) {
+        // Visits
+        const visits = await storage.getVisitsByDebtor(d.id);
+        for (const v of visits) {
+          if (!v.date) continue;
+          if (startDate && v.date < startDate) continue;
+          if (endDate && v.date > endDate) continue;
+          events.push({
+            id: `visit-${v.id}`,
+            title: `Visita: ${d.name}`,
+            date: v.date,
+            time: v.time || "10:00",
+            type: "visit",
+            description: v.notes || v.address,
+            entityId: d.id,
+            entityType: "debtor",
+          });
+        }
+        // Activity logs with nextActionDate
+        const logs = await storage.getActivityLogsByDebtor(d.id);
+        for (const l of logs) {
+          if (!l.nextActionDate) continue;
+          if (startDate && l.nextActionDate < startDate) continue;
+          if (endDate && l.nextActionDate > endDate) continue;
+          events.push({
+            id: `followup-${l.id}`,
+            title: `Seguimiento: ${d.name}`,
+            date: l.nextActionDate,
+            time: "09:00",
+            type: "follow-up",
+            description: l.nextAction || "",
+            entityId: d.id,
+            entityType: "debtor",
+          });
+        }
+      }
+
+      res.json(events);
+    } catch (err) {
+      console.error("activities/calendar error:", err);
+      res.status(500).json([]);
+    }
+  });
+
   // ─── PENDING FOLLOW-UPS ───────────────────────────────────────────────────
   app.get("/api/followups/pending", isAuthenticated, async (req, res) => {
     try {
