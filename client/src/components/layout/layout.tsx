@@ -12,7 +12,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   const { isLoading } = useAuth();
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -25,14 +25,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, title }) => {
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       <Sidebar />
-      
-      <main className="flex-1 overflow-x-hidden bg-gray-50">
+
+      <main className="flex-1 overflow-x-hidden bg-gray-50 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
         <Navbar title={title} />
-        
+
         <div className="p-4 sm:p-6 lg:p-8">
           {children}
         </div>
-        
+
         <Footer />
       </main>
     </div>
