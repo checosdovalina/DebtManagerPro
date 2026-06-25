@@ -5,7 +5,7 @@ import { ClientForm } from "@/components/clients/client-form";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { Breadcrumb } from "@/components/ui/breadcrumb-nav";
-import type { Client } from "@shared/schema";
+import type { Client, User } from "@shared/schema";
 
 interface ClientEditPageProps {
   id: number;
@@ -17,6 +17,12 @@ export default function ClientEditPage({ id }: ClientEditPageProps) {
   const { data: client, isLoading } = useQuery<Client>({
     queryKey: [`/api/clients/${id}`],
   });
+
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
+  const executives = users.filter(user => user.role === "executive");
 
   if (isLoading) {
     return (
@@ -58,6 +64,10 @@ export default function ClientEditPage({ id }: ClientEditPageProps) {
           <h1 className="text-2xl font-bold mb-6">Editar Cliente</h1>
           <ClientForm 
             initialData={client}
+            usersList={executives.map(exec => ({
+              id: exec.id,
+              fullName: exec.fullName,
+            }))}
             onSuccess={() => {
               navigate(`/clients/${id}`);
             }}
