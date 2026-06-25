@@ -1339,14 +1339,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date().toISOString().split("T")[0];
 
       const {
-        clientId,
+        clientId: rawClientId,
+        createClient: shouldCreateClient,
+        clientData,
         debtorData,
         debts = [],
         payments = [],
         activityLogs = [],
         visits = [],
       } = req.body as {
-        clientId: number;
+        clientId?: number;
+        createClient?: boolean;
+        clientData?: {
+          name: string;
+          rfc?: string;
+          phone?: string;
+          email?: string;
+          street?: string;
+          colony?: string;
+          zipCode?: string;
+          city?: string;
+          state?: string;
+          businessType?: string;
+        };
         debtorData: {
           name: string;
           phone?: string;
@@ -1361,12 +1376,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         visits: { reportNumber: string; date: string; content: string; commitment: string; nextReport: string }[];
       };
 
-      if (!clientId || !debtorData?.name) {
-        return res.status(400).json({ message: "clientId y nombre del deudor son requeridos" });
+      if (!debtorData?.name) {
+        return res.status(400).json({ message: "Nombre del deudor es requerido" });
+      }
+      if (!rawClientId && !shouldCreateClient) {
+        return res.status(400).json({ message: "Se requiere clientId o createClient=true con clientData" });
       }
 
-      const client = await storage.getClient(clientId);
-      if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
+      // Resolve the client: use existing or create new
+      let resolvedClientId: number;
+      let clientCreated = false;
+
+      if (shouldCreateClient && clientData?.name) {
+        const rfc = clientData.rfc?.trim() || `SIN-RFC-${Date.now()}`;
+        const newClient = await storage.createClient({
+          name: clientData.name,
+          rfc,
+          curp: null,
+          personType: "company" as const,
+          street: clientData.street || null,
+          number: null,
+          colony: clientData.colony || null,
+          zipCode: clientData.zipCode || null,
+          city: clientData.city || null,
+          state: clientData.state || null,
+          phone: clientData.phone || null,
+          email: clientData.email || null,
+          legalRepresentative: null,
+          businessType: clientData.businessType || null,
+          executiveId: null,
+          status: "active" as const,
+          notes: "Creado automáticamente desde importación de expediente",
+        });
+        resolvedClientId = newClient.id;
+        clientCreated = true;
+      } else {
+        const clientId = Number(rawClientId);
+        const client = await storage.getClient(clientId);
+        if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
+        resolvedClientId = clientId;
+      }
 
       // Parse address into street
       const debtorAddress = debtorData.address || "";
@@ -1386,7 +1435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: debtorData.phone || null,
         email: null,
         contactName: debtorData.contact || null,
-        clientId,
+        clientId: resolvedClientId,
         assignedUserId: userId,
         status: "new" as const,
         notes: debtorData.notes || null,
@@ -1483,7 +1532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         type: "system",
         title: "Expediente importado",
-        message: `Se importó el expediente de "${debtor.name}" con ${debtsCreated} adeudo(s).`,
+        message: `Se importó el expediente de "${debtor.name}" con ${debtsCreated} adeudo(s).${clientCreated ? " Se creó el cliente automáticamente." : ""}`,
         read: false,
         entityType: "debtor",
         entityId: debtor.id,
@@ -1491,6 +1540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         debtorId: debtor.id,
+        clientId: resolvedClientId,
+        clientCreated,
         debtsCreated,
         paymentsCreated,
         activityLogsCreated,

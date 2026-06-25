@@ -391,6 +391,7 @@ export default function ImportacionPage() {
   // ── Expediente state ────────────────────────────────────────────────────────
   const [expediente, setExpediente] = useState<ExpedienteData | null>(null);
   const [expedienteClientId, setExpedienteClientId] = useState<string>("");
+  const [createNewClient, setCreateNewClient] = useState(false);
   const [expedienteStep, setExpedienteStep] = useState<1 | 2 | 3>(1);
   const [expedienteResult, setExpedienteResult] = useState<any>(null);
 
@@ -413,7 +414,8 @@ export default function ImportacionPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       setExpedienteResult(data);
       setExpedienteStep(3);
-      toast({ title: "Expediente importado", description: `Deudor "${expediente?.debtorName}" creado con ${data.debtsCreated} adeudos.` });
+      const clientMsg = data.clientCreated ? " · Cliente creado automáticamente." : "";
+      toast({ title: "Expediente importado", description: `Deudor "${expediente?.debtorName}" creado con ${data.debtsCreated} adeudo(s).${clientMsg}` });
     },
     onError: (e: any) => {
       toast({ title: "Error al importar", description: e?.message || "No se pudo importar el expediente.", variant: "destructive" });
@@ -450,14 +452,30 @@ export default function ImportacionPage() {
       try {
         const data = parseExpediente(e.target?.result as ArrayBuffer, file.name);
         setExpediente(data);
-        // Try to auto-match client by name or RFC
-        if (data.clientName) {
+
+        // Auto-match client by name or RFC
+        if (data.clientName || data.clientRfc) {
           const match = clients.find(c =>
-            c.name.toLowerCase() === data.clientName.toLowerCase() ||
-            (data.clientRfc && c.rfc.toLowerCase() === data.clientRfc.toLowerCase())
+            (data.clientRfc && c.rfc.toLowerCase() === data.clientRfc.toLowerCase()) ||
+            c.name.toLowerCase() === data.clientName.toLowerCase()
           );
-          if (match) setExpedienteClientId(String(match.id));
+          if (match) {
+            // Found existing client — link to it
+            setExpedienteClientId(String(match.id));
+            setCreateNewClient(false);
+          } else if (data.clientName) {
+            // No match but has data — will create new client automatically
+            setExpedienteClientId("");
+            setCreateNewClient(true);
+          } else {
+            setExpedienteClientId("");
+            setCreateNewClient(false);
+          }
+        } else {
+          setExpedienteClientId("");
+          setCreateNewClient(false);
         }
+
         setExpedienteStep(2);
       } catch (err: any) {
         toast({ title: "Error al leer el archivo", description: err.message || "Formato no reconocido.", variant: "destructive" });
@@ -468,12 +486,11 @@ export default function ImportacionPage() {
 
   async function handleExpedienteImport() {
     if (!expediente) return;
-    if (!expedienteClientId) {
+    if (!createNewClient && !expedienteClientId) {
       toast({ title: "Selecciona un cliente", description: "Debes asignar este expediente a un cliente.", variant: "destructive" });
       return;
     }
-    await expedienteMutation.mutateAsync({
-      clientId: Number(expedienteClientId),
+    const payload: any = {
       debtorData: {
         name: expediente.debtorName,
         phone: expediente.debtorPhone,
@@ -486,12 +503,33 @@ export default function ImportacionPage() {
       payments: expediente.payments,
       activityLogs: expediente.activityLogs,
       visits: expediente.visits,
-    });
+    };
+
+    if (createNewClient) {
+      payload.createClient = true;
+      payload.clientData = {
+        name: expediente.clientName,
+        rfc: expediente.clientRfc,
+        phone: expediente.clientPhone,
+        email: expediente.clientEmail,
+        street: expediente.clientStreet,
+        colony: expediente.clientColony,
+        zipCode: expediente.clientZipCode,
+        city: expediente.clientCity,
+        state: expediente.clientState,
+        businessType: expediente.clientBusinessType,
+      };
+    } else {
+      payload.clientId = Number(expedienteClientId);
+    }
+
+    await expedienteMutation.mutateAsync(payload);
   }
 
   function resetExpediente() {
     setExpediente(null);
     setExpedienteClientId("");
+    setCreateNewClient(false);
     setExpedienteStep(1);
     setExpedienteResult(null);
     if (fileRef.current) fileRef.current.value = "";
@@ -676,7 +714,7 @@ export default function ImportacionPage() {
                         <Button
                           size="sm"
                           onClick={handleExpedienteImport}
-                          disabled={expedienteMutation.isPending || !expedienteClientId}
+                          disabled={expedienteMutation.isPending || (!createNewClient && !expedienteClientId)}
                           data-testid="btn-import-expediente"
                         >
                           {expedienteMutation.isPending
@@ -687,26 +725,89 @@ export default function ImportacionPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {/* Client selector */}
-                    <div className="mb-4">
-                      <label className="text-sm font-medium mb-1.5 block">
-                        Asignar al cliente <span className="text-red-500">*</span>
-                        {expediente.clientName && (
-                          <span className="ml-2 text-xs text-gray-400 font-normal">
-                            (en el expediente: {expediente.clientName})
-                          </span>
-                        )}
+                    {/* Client assignment */}
+                    <div className="mb-2">
+                      <label className="text-sm font-medium mb-2 block">
+                        Cliente al que pertenece este deudor
                       </label>
-                      <Select value={expedienteClientId} onValueChange={setExpedienteClientId}>
-                        <SelectTrigger data-testid="select-expediente-client">
-                          <SelectValue placeholder="Selecciona un cliente..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clients.map(c => (
-                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                      {/* Auto-create banner */}
+                      {createNewClient && (
+                        <div className="rounded-lg border border-green-200 bg-green-50 p-3 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold text-green-800">
+                                Se creará el cliente: <span className="font-bold">{expediente.clientName}</span>
+                              </p>
+                              <p className="text-xs text-green-700 mt-0.5">
+                                RFC: {expediente.clientRfc || "—"} · No existe en el sistema — se creará automáticamente
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-green-700 hover:text-green-900 shrink-0"
+                            onClick={() => setCreateNewClient(false)}
+                            data-testid="btn-use-existing-client"
+                          >
+                            Usar existente
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Existing client matched */}
+                      {!createNewClient && expedienteClientId && (
+                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                            <div>
+                              <p className="text-sm font-semibold text-blue-800">
+                                Cliente vinculado: <span className="font-bold">{clients.find(c => String(c.id) === expedienteClientId)?.name}</span>
+                              </p>
+                              <p className="text-xs text-blue-700 mt-0.5">Se encontró en el sistema y se vinculará automáticamente</p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-blue-700 hover:text-blue-900 shrink-0"
+                            onClick={() => setExpedienteClientId("")}
+                            data-testid="btn-change-client"
+                          >
+                            Cambiar
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Manual selector — shown when no auto-match and not creating new */}
+                      {!createNewClient && !expedienteClientId && (
+                        <div className="space-y-2">
+                          <Select value={expedienteClientId} onValueChange={setExpedienteClientId}>
+                            <SelectTrigger data-testid="select-expediente-client">
+                              <SelectValue placeholder="Selecciona un cliente existente..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {clients.map(c => (
+                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {expediente.clientName && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-green-700 border-green-300 hover:bg-green-50"
+                              onClick={() => setCreateNewClient(true)}
+                              data-testid="btn-create-client-from-file"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Crear nuevo cliente "{expediente.clientName}" desde el expediente
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
