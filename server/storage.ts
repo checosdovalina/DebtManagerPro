@@ -1477,8 +1477,7 @@ export class DatabaseStorage implements IStorage {
 
   async getDocumentsByEntity(entityType: string, entityId: number): Promise<Document[]> {
     return await db.select().from(documents)
-      .where(eq(documents.entityType, entityType))
-      .where(eq(documents.entityId, entityId));
+      .where(and(eq(documents.entityType, entityType), eq(documents.entityId, entityId)));
   }
 
   async createDocument(document: InsertDocument): Promise<Document> {
@@ -1930,7 +1929,7 @@ export class DatabaseStorage implements IStorage {
     // For monthly collection, we can sum up the amounts from debt records created in the current month
     const currentDate = new Date();
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const monthlyCollection = await db.select({ sum: sum(debts.amount) }).from(debts)
+    const monthlyCollection = await db.select({ sum: sum(debts.currentAmount) }).from(debts)
       .where(gte(debts.createdAt, firstDayOfMonth));
     
     const litigationCasesCount = await db.select({ count: count() }).from(litigations);
