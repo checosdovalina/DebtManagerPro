@@ -63,16 +63,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return done(null, false, { message: "Correo electrónico incorrecto." });
           }
           
-          // For development purpose, allow plain password for the demo credentials
-          if (email === "admin@dcs.com" && password === "password123" && user.password === "password123") {
-            return done(null, user);
-          }
-          
-          const isMatch = await bcrypt.compare(password, user.password);
+          // Support both bcrypt-hashed passwords and legacy plain-text passwords.
+          // Users created through the app are stored in plain text, while others
+          // may be hashed; detect the format and compare accordingly so every
+          // role (not just admin) can authenticate.
+          const storedPassword = user.password || "";
+          const isHashed = storedPassword.startsWith("$2");
+          const isMatch = isHashed
+            ? await bcrypt.compare(password, storedPassword)
+            : password === storedPassword;
+
           if (!isMatch) {
             return done(null, false, { message: "Contraseña incorrecta." });
           }
-          
+
+          // Lazily migrate legacy plain-text passwords to bcrypt on successful
+          // login so the plain-text fallback is phased out over time.
+          if (!isHashed) {
+            try {
+              const hashed = await bcrypt.hash(password, 10);
+              await storage.updateUser(user.id, { password: hashed });
+              user.password = hashed;
+            } catch (migrationErr) {
+              console.error("Password migration error:", migrationErr);
+            }
+          }
+
           return done(null, user);
         } catch (err) {
           return done(err);

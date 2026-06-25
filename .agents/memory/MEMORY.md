@@ -2,3 +2,4 @@
 - [Storage switch to DatabaseStorage](storage-database-switch.md) — storage was hardcoded to MemStorage; now environment-aware via DATABASE_URL check.
 - [DB driver must be pg, not neon-serverless](db-driver-vps.md) — neon-serverless can't reach the VPS local Postgres (wss://localhost fails); use node-postgres/pg with conditional SSL for both Replit Neon and VPS.
 - [DatabaseStorage stubs](database-storage-stubs.md) — createNotification and other methods were stubs/throws; implement in both MemStorage and DatabaseStorage.
+- [Auth password handling](auth-password-handling.md) — non-admin login failed: app stores plain-text passwords but login used bcrypt.compare; support both formats + migrate on login. Logout must force redirect to /login.

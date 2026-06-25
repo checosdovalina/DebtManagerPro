@@ -42,14 +42,15 @@ export function useAuth() {
 
   const logout = async () => {
     const response = await apiRequest("POST", "/api/auth/logout");
-    
+
     if (!response.ok) {
       throw new Error("Logout failed");
     }
-    
-    // Invalidate the auth query to refresh the user data
-    await queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
-    return response.json();
+
+    // Clear cached data and force a full reload to the login screen so the
+    // route guard re-evaluates the now-cleared session and redirects.
+    queryClient.clear();
+    window.location.href = "/login";
   };
 
   return {
