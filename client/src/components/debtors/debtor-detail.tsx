@@ -175,6 +175,16 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
     enabled: !!debtorId,
   });
 
+  const { data: visits = [], isLoading: isVisitsLoading } = useQuery<any[]>({
+    queryKey: [`/api/debtors/${debtorId}/visits`],
+    enabled: !!debtorId,
+  });
+
+  const { data: reports = [], isLoading: isReportsLoading } = useQuery<any[]>({
+    queryKey: [`/api/debtors/${debtorId}/reports`],
+    enabled: !!debtorId,
+  });
+
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
@@ -491,35 +501,96 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
           </TabsContent>
           
           <TabsContent value="reports" className="p-6">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <FileText className="h-12 w-12 mx-auto text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Sin reportes</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  No hay reportes generados para este deudor.
-                </p>
-                <Button className="mt-4" onClick={() => setReportOpen(true)} data-testid="btn-new-report">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-medium text-gray-900">Reportes al cliente</h3>
+                <Button onClick={() => setReportOpen(true)} data-testid="btn-new-report">
                   <FileText className="h-4 w-4 mr-2" />
                   Generar nuevo reporte
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+              {isReportsLoading ? (
+                <div className="space-y-2"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+              ) : reports.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <FileText className="h-12 w-12 mx-auto text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Sin reportes</h3>
+                    <p className="mt-1 text-sm text-gray-500">No hay reportes generados para este deudor.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {reports.map((r: any) => (
+                    <Card key={r.id} data-testid={`card-report-${r.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <FileText className="h-4 w-4 text-primary" />
+                              <span className="font-medium text-sm">Reporte del {r.reportDate}</span>
+                              <Badge variant="outline" className="text-xs capitalize">{r.status === "draft" ? "Borrador" : r.status}</Badge>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-1">Período: {r.periodStart} — {r.periodEnd}</p>
+                            <p className="text-sm text-gray-700 line-clamp-2">{r.summary}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
           
           <TabsContent value="visits" className="p-6">
-            <Card>
-              <CardContent className="p-6 text-center">
-                <CalendarDays className="h-12 w-12 mx-auto text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Sin visitas programadas</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  No hay visitas registradas para este deudor.
-                </p>
-                <Button className="mt-4" onClick={() => setVisitOpen(true)} data-testid="btn-schedule-visit">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-base font-medium text-gray-900">Visitas registradas</h3>
+                <Button onClick={() => setVisitOpen(true)} data-testid="btn-schedule-visit">
                   <CalendarDays className="h-4 w-4 mr-2" />
                   Programar visita
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+              {isVisitsLoading ? (
+                <div className="space-y-2"><Skeleton className="h-20 w-full" /><Skeleton className="h-20 w-full" /></div>
+              ) : visits.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <CalendarDays className="h-12 w-12 mx-auto text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">Sin visitas programadas</h3>
+                    <p className="mt-1 text-sm text-gray-500">No hay visitas registradas para este deudor.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {visits.map((v: any) => (
+                    <Card key={v.id} data-testid={`card-visit-${v.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <CalendarDays className="h-4 w-4 text-primary" />
+                              <span className="font-medium text-sm">{v.date} a las {v.time}</span>
+                              <Badge variant="outline" className="text-xs capitalize">{v.result}</Badge>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              <span className="font-medium">Dirección:</span> {v.address}
+                            </p>
+                            {v.personContacted && (
+                              <p className="text-xs text-gray-500">
+                                <span className="font-medium">Persona contactada:</span> {v.personContacted}
+                              </p>
+                            )}
+                            {v.notes && <p className="text-sm text-gray-700 mt-1">{v.notes}</p>}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
           
           <TabsContent value="litigation" className="p-6">

@@ -805,6 +805,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/debtors/:debtorId/reports", isAuthenticated, async (req, res) => {
+    try {
+      const debtorId = parseInt(req.params.debtorId);
+      const reports = await storage.getClientReportsByDebtor(debtorId);
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching reports" });
+    }
+  });
+
   app.post("/api/debtors/:debtorId/reports", isAuthenticated, async (req, res) => {
     try {
       const debtorId = parseInt(req.params.debtorId);
