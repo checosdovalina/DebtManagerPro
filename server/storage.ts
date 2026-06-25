@@ -12,6 +12,8 @@ import {
   clientBankingInfo, type ClientBankingInfo, type InsertClientBankingInfo,
   payments, type Payment, type InsertPayment,
   notifications, type Notification, type InsertNotification,
+  paymentPromises, type PaymentPromise, type InsertPaymentPromise,
+  messageTemplates, type MessageTemplate, type InsertMessageTemplate,
   USER_ROLES
 } from "@shared/schema";
 
@@ -137,6 +139,22 @@ export interface IStorage {
   markAllNotificationsRead(userId: number): Promise<void>;
   deleteNotification(id: number): Promise<boolean>;
 
+  // Payment Promises
+  getPaymentPromisesByDebtor(debtorId: number): Promise<PaymentPromise[]>;
+  getAllPendingPromises(): Promise<PaymentPromise[]>;
+  createPaymentPromise(promise: InsertPaymentPromise): Promise<PaymentPromise>;
+  updatePaymentPromise(id: number, data: Partial<PaymentPromise>): Promise<PaymentPromise | undefined>;
+  deletePaymentPromise(id: number): Promise<boolean>;
+
+  // Message Templates
+  getMessageTemplates(): Promise<MessageTemplate[]>;
+  createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate>;
+  updateMessageTemplate(id: number, data: Partial<MessageTemplate>): Promise<MessageTemplate | undefined>;
+  deleteMessageTemplate(id: number): Promise<boolean>;
+
+  // Pending Follow-ups
+  getPendingFollowups(userId?: number): Promise<any[]>;
+
   // Bulk import
   bulkCreateDebtors(debtors: InsertDebtor[]): Promise<Debtor[]>;
   bulkCreateDebts(debts: InsertDebt[]): Promise<Debt[]>;
@@ -156,6 +174,8 @@ export class MemStorage implements IStorage {
   private clientBankingInfos: Map<number, ClientBankingInfo>;
   private payments: Map<number, Payment>;
   private notificationsMap: Map<number, Notification>;
+  private paymentPromisesMap: Map<number, PaymentPromise>;
+  private messageTemplatesMap: Map<number, MessageTemplate>;
 
   private userIdCounter: number;
   private clientIdCounter: number;
@@ -170,6 +190,8 @@ export class MemStorage implements IStorage {
   private clientContactIdCounter: number;
   private clientBankingInfoIdCounter: number;
   private notificationIdCounter: number;
+  private paymentPromiseIdCounter: number;
+  private messageTemplateIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -185,6 +207,8 @@ export class MemStorage implements IStorage {
     this.clientBankingInfos = new Map();
     this.payments = new Map();
     this.notificationsMap = new Map();
+    this.paymentPromisesMap = new Map();
+    this.messageTemplatesMap = new Map();
 
     this.userIdCounter = 1;
     this.clientIdCounter = 1;
@@ -199,6 +223,8 @@ export class MemStorage implements IStorage {
     this.clientBankingInfoIdCounter = 1;
     this.paymentIdCounter = 1;
     this.notificationIdCounter = 1;
+    this.paymentPromiseIdCounter = 1;
+    this.messageTemplateIdCounter = 1;
 
     // Seed data
     this.seedData();
@@ -1028,6 +1054,9 @@ export class MemStorage implements IStorage {
         nextActionDate: new Date(2023, 6, 5), // July 5, 2023
       });
     }
+
+    // Seed default message templates
+    this.seedDefaultTemplates();
   }
 
   // Management module functions
@@ -1122,6 +1151,127 @@ export class MemStorage implements IStorage {
     reports.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return reports;
+  }
+
+  // Payment Promises
+  async getPaymentPromisesByDebtor(debtorId: number): Promise<PaymentPromise[]> {
+    return Array.from(this.paymentPromisesMap.values())
+      .filter(p => p.debtorId === debtorId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getAllPendingPromises(): Promise<PaymentPromise[]> {
+    return Array.from(this.paymentPromisesMap.values())
+      .filter(p => p.status === "pending")
+      .sort((a, b) => new Date(a.promisedDate).getTime() - new Date(b.promisedDate).getTime());
+  }
+
+  async createPaymentPromise(promise: InsertPaymentPromise): Promise<PaymentPromise> {
+    const id = this.paymentPromiseIdCounter++;
+    const newPromise: PaymentPromise = {
+      ...promise,
+      id,
+      status: promise.status || "pending",
+      debtId: promise.debtId ?? null,
+      activityLogId: promise.activityLogId ?? null,
+      notes: promise.notes ?? null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.paymentPromisesMap.set(id, newPromise);
+    return newPromise;
+  }
+
+  async updatePaymentPromise(id: number, data: Partial<PaymentPromise>): Promise<PaymentPromise | undefined> {
+    const existing = this.paymentPromisesMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data, updatedAt: new Date() };
+    this.paymentPromisesMap.set(id, updated);
+    return updated;
+  }
+
+  async deletePaymentPromise(id: number): Promise<boolean> {
+    return this.paymentPromisesMap.delete(id);
+  }
+
+  // Message Templates
+  async getMessageTemplates(): Promise<MessageTemplate[]> {
+    return Array.from(this.messageTemplatesMap.values())
+      .sort((a, b) => (a.type + a.scenario).localeCompare(b.type + b.scenario));
+  }
+
+  async createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate> {
+    const id = this.messageTemplateIdCounter++;
+    const newTemplate: MessageTemplate = {
+      ...template,
+      id,
+      isDefault: template.isDefault ?? false,
+      createdById: template.createdById ?? null,
+      createdAt: new Date(),
+    };
+    this.messageTemplatesMap.set(id, newTemplate);
+    return newTemplate;
+  }
+
+  async updateMessageTemplate(id: number, data: Partial<MessageTemplate>): Promise<MessageTemplate | undefined> {
+    const existing = this.messageTemplatesMap.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.messageTemplatesMap.set(id, updated);
+    return updated;
+  }
+
+  async deleteMessageTemplate(id: number): Promise<boolean> {
+    return this.messageTemplatesMap.delete(id);
+  }
+
+  // Pending Follow-ups
+  async getPendingFollowups(userId?: number): Promise<any[]> {
+    const today = new Date().toISOString().split("T")[0];
+    const allActivities = Array.from(this.activityLogs.values());
+    const filtered = allActivities.filter(a => {
+      if (!a.nextActionDate) return false;
+      if (userId && a.userId !== userId) return false;
+      return true;
+    });
+
+    const allDebtors = Array.from(this.debtors.values());
+    const debtorMap = new Map(allDebtors.map(d => [d.id, d]));
+
+    return filtered
+      .sort((a, b) => {
+        const da = a.nextActionDate || "";
+        const db = b.nextActionDate || "";
+        return da.localeCompare(db);
+      })
+      .map(a => ({
+        id: a.id,
+        debtorId: a.debtorId,
+        debtorName: debtorMap.get(a.debtorId)?.name || `Deudor #${a.debtorId}`,
+        nextAction: a.nextAction,
+        nextActionDate: a.nextActionDate,
+        contactType: a.contactType,
+        result: a.result,
+        isOverdue: a.nextActionDate ? a.nextActionDate < today : false,
+        isToday: a.nextActionDate === today,
+        userId: a.userId,
+      }));
+  }
+
+  private seedDefaultTemplates() {
+    const templates: Omit<MessageTemplate, "id">[] = [
+      { name: "Primer contacto - WhatsApp", type: "whatsapp", scenario: "primer_contacto", content: "Buen día [NOMBRE], le contactamos de parte de DCS para notificarle que tenemos un adeudo registrado a su nombre por la cantidad de $[MONTO]. Por favor comuníquese con nosotros para regularizar su situación. Gracias.", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Recordatorio amable - WhatsApp", type: "whatsapp", scenario: "recordatorio", content: "Estimado/a [NOMBRE], le recordamos que su compromiso de pago por $[MONTO] vence el día [FECHA]. Si ya realizó su pago, por favor envíenos su comprobante. Gracias.", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Aviso de acción legal - WhatsApp", type: "whatsapp", scenario: "aviso_legal", content: "Estimado/a [NOMBRE], le informamos que su cuenta por $[MONTO] será enviada al departamento legal el día [FECHA] si no se regulariza. Le instamos a contactarnos a la brevedad para evitar consecuencias legales.", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Primer contacto - Email", type: "email", scenario: "primer_contacto", content: "Estimado/a [NOMBRE]:\n\nEsperamos que se encuentre bien. Le contactamos para informarle que se tiene registrado un adeudo a su nombre con folio [FOLIO] por la cantidad de $[MONTO] con fecha de vencimiento [FECHA].\n\nLe invitamos a comunicarse con nosotros para convenir un plan de pago.\n\nAtentamente,\nEquipo de Cobranza DCS", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Confirmación de promesa - Email", type: "email", scenario: "confirmacion_promesa", content: "Estimado/a [NOMBRE]:\n\nPor este medio confirmamos el compromiso de pago acordado:\n\n- Monto: $[MONTO]\n- Fecha acordada: [FECHA]\n- Referencia: [FOLIO]\n\nLe recordamos que el incumplimiento podría derivar en acciones adicionales.\n\nAtentamente,\nEquipo de Cobranza DCS", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Guión - Llamada inicial", type: "call", scenario: "llamada_inicial", content: "1. Saludo: \"Buenos días/tardes, ¿hablo con [NOMBRE]?\"\n2. Identificación: \"Le llamo de parte de DCS Cobranza, soy [GESTOR].\"\n3. Motivo: \"Le contactamos porque tiene un adeudo pendiente por $[MONTO] con vencimiento el [FECHA].\"\n4. Escuchar situación del deudor.\n5. Si promete pagar: registrar fecha y monto comprometido.\n6. Si se niega: explicar consecuencias y ofrecer plan de pagos.\n7. Si no localizado: dejar recado con tercero o intentar otro medio.\n8. Cierre: agradecer y confirmar próximo contacto.", isDefault: true, createdById: null, createdAt: new Date() },
+      { name: "Guión - Seguimiento promesa", type: "call", scenario: "seguimiento_promesa", content: "1. Saludo y recordatorio: \"Buenos días [NOMBRE], le llamo de DCS. El día [FECHA PROMESA] acordamos un pago de $[MONTO].\"\n2. Verificar si pagó: \"¿Pudo realizar el pago?\"\n3. Si sí pagó: solicitar comprobante y actualizar estatus.\n4. Si no pagó: preguntar motivo y reagendar o escalar.\n5. Si promete reagendar: registrar nueva fecha.\n6. Si se niega definitivamente: informar que se procederá con acciones legales.", isDefault: true, createdById: null, createdAt: new Date() },
+    ];
+    templates.forEach(t => {
+      const id = this.messageTemplateIdCounter++;
+      this.messageTemplatesMap.set(id, { ...t, id });
+    });
   }
 }
 
@@ -1817,6 +1967,22 @@ export class DatabaseStorage implements IStorage {
   async deleteNotification(_id: number): Promise<boolean> { return false; }
   async bulkCreateDebtors(_list: InsertDebtor[]): Promise<Debtor[]> { return []; }
   async bulkCreateDebts(_list: InsertDebt[]): Promise<Debt[]> { return []; }
+
+  // Payment Promises (stubs — DB implementation pending)
+  async getPaymentPromisesByDebtor(_debtorId: number): Promise<PaymentPromise[]> { return []; }
+  async getAllPendingPromises(): Promise<PaymentPromise[]> { return []; }
+  async createPaymentPromise(_promise: InsertPaymentPromise): Promise<PaymentPromise> { throw new Error("Not implemented"); }
+  async updatePaymentPromise(_id: number, _data: Partial<PaymentPromise>): Promise<PaymentPromise | undefined> { return undefined; }
+  async deletePaymentPromise(_id: number): Promise<boolean> { return false; }
+
+  // Message Templates (stubs — DB implementation pending)
+  async getMessageTemplates(): Promise<MessageTemplate[]> { return []; }
+  async createMessageTemplate(_template: InsertMessageTemplate): Promise<MessageTemplate> { throw new Error("Not implemented"); }
+  async updateMessageTemplate(_id: number, _data: Partial<MessageTemplate>): Promise<MessageTemplate | undefined> { return undefined; }
+  async deleteMessageTemplate(_id: number): Promise<boolean> { return false; }
+
+  // Pending Follow-ups (stub — DB implementation pending)
+  async getPendingFollowups(_userId?: number): Promise<any[]> { return []; }
 }
 
 // Usar MemStorage para el desarrollo/pruebas hasta que la base de datos esté completamente configurada

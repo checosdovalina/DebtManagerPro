@@ -21,7 +21,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DebtDetail } from "./debt-detail";
 import { ActivityLog } from "./activity-log";
 import { Debtor, Client, Debt, ActivityLog as ActivityLogType } from "@shared/schema";
-import { Printer, PencilLine, CreditCard, MessageSquare, Gavel, CalendarDays, FileText } from "lucide-react";
+import { Printer, PencilLine, CreditCard, MessageSquare, Gavel, CalendarDays, FileText, Clock } from "lucide-react";
+import { InteractionTimeline } from "./interaction-timeline";
+import { PaymentPromises } from "./payment-promises";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -251,6 +253,19 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                 >
                   Documentos
                 </TabsTrigger>
+                <TabsTrigger
+                  value="timeline"
+                  className="rounded-none border-b-2 border-transparent px-4 py-3 hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none"
+                >
+                  <Clock className="h-4 w-4 mr-1.5" />
+                  Historial
+                </TabsTrigger>
+                <TabsTrigger
+                  value="promises"
+                  className="rounded-none border-b-2 border-transparent px-4 py-3 hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none"
+                >
+                  Promesas
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -448,6 +463,14 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="timeline" className="p-6">
+            <InteractionTimeline debtorId={debtor.id} />
+          </TabsContent>
+
+          <TabsContent value="promises" className="p-6">
+            <PaymentPromises debtorId={debtor.id} />
           </TabsContent>
         </Tabs>
       </Card>

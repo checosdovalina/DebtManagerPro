@@ -294,6 +294,49 @@ export const notifications = pgTable("notifications", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// PAYMENT PROMISES TABLE
+export const PROMISE_STATUS = {
+  PENDING: "pending",
+  FULFILLED: "fulfilled",
+  BROKEN: "broken",
+  RESCHEDULED: "rescheduled",
+} as const;
+export type PromiseStatus = typeof PROMISE_STATUS[keyof typeof PROMISE_STATUS];
+
+export const paymentPromises = pgTable("payment_promises", {
+  id: serial("id").primaryKey(),
+  debtorId: integer("debtor_id").notNull().references(() => debtors.id),
+  debtId: integer("debt_id").references(() => debts.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  activityLogId: integer("activity_log_id").references(() => activityLogs.id),
+  promisedAmount: real("promised_amount").notNull(),
+  promisedDate: date("promised_date").notNull(),
+  status: text("status").notNull().$type<PromiseStatus>().default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// MESSAGE TEMPLATES TABLE
+export const TEMPLATE_TYPE = {
+  WHATSAPP: "whatsapp",
+  EMAIL: "email",
+  CALL: "call",
+  SMS: "sms",
+} as const;
+export type TemplateType = typeof TEMPLATE_TYPE[keyof typeof TEMPLATE_TYPE];
+
+export const messageTemplates = pgTable("message_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull().$type<TemplateType>(),
+  scenario: text("scenario").notNull(),
+  content: text("content").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  createdById: integer("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 // PAYMENTS TABLE (ABONOS)
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
@@ -309,6 +352,8 @@ export const payments = pgTable("payments", {
 });
 
 // SCHEMAS
+export const insertPaymentPromiseSchema = createInsertSchema(paymentPromises).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertMessageTemplateSchema = createInsertSchema(messageTemplates).omit({ id: true, createdAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, lastLogin: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ id: true, createdAt: true });
 export const insertDebtorSchema = createInsertSchema(debtors).omit({ id: true, createdAt: true });
@@ -337,6 +382,8 @@ export type InsertClientContact = z.infer<typeof insertClientContactSchema>;
 export type InsertClientBankingInfo = z.infer<typeof insertClientBankingInfoSchema>;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type InsertPaymentPromise = z.infer<typeof insertPaymentPromiseSchema>;
+export type InsertMessageTemplate = z.infer<typeof insertMessageTemplateSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -351,3 +398,5 @@ export type ClientContact = typeof clientContacts.$inferSelect;
 export type ClientBankingInfo = typeof clientBankingInfo.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
+export type PaymentPromise = typeof paymentPromises.$inferSelect;
+export type MessageTemplate = typeof messageTemplates.$inferSelect;

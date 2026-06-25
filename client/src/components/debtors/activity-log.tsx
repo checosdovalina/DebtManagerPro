@@ -49,6 +49,8 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
+import { MessageTemplatesModal } from "./message-templates-modal";
+import { CallScriptModal } from "./call-script-modal";
 
 // Form schema for activity log
 const activityLogSchema = z.object({
@@ -217,7 +219,10 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
             Registro de gestiones realizadas con este deudor
           </p>
         </div>
-        <Dialog open={isAddActivityOpen} onOpenChange={setIsAddActivityOpen}>
+        <div className="flex gap-2 flex-wrap">
+            <CallScriptModal />
+            <MessageTemplatesModal />
+            <Dialog open={isAddActivityOpen} onOpenChange={setIsAddActivityOpen}>
           <DialogTrigger asChild>
             <Button>
               <PlusCircle className="h-4 w-4 mr-2" />
@@ -317,7 +322,13 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
                   name="comments"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Comentarios</FormLabel>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Comentarios</FormLabel>
+                        <MessageTemplatesModal
+                          triggerLabel="Insertar plantilla"
+                          onSelect={(content) => field.onChange(content)}
+                        />
+                      </div>
                       <FormControl>
                         <Textarea
                           placeholder="Detalles de la gestión realizada"
@@ -371,6 +382,7 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({
             </Form>
           </DialogContent>
         </Dialog>
+      </div>
       </div>
 
       {isLoading ? (

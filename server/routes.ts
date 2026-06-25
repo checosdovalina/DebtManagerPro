@@ -1236,5 +1236,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.status(500).json({ message: "Error al exportar" }); }
   });
 
+  // ─── PAYMENT PROMISES ─────────────────────────────────────────────────────
+  app.get("/api/debtors/:debtorId/payment-promises", isAuthenticated, async (req, res) => {
+    try {
+      const promises = await storage.getPaymentPromisesByDebtor(Number(req.params.debtorId));
+      res.json(promises);
+    } catch { res.status(500).json({ message: "Error al obtener promesas" }); }
+  });
+
+  app.post("/api/debtors/:debtorId/payment-promises", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const data = { ...req.body, debtorId: Number(req.params.debtorId), userId: user.id };
+      const promise = await storage.createPaymentPromise(data);
+      res.json(promise);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/payment-promises/:id", isAuthenticated, async (req, res) => {
+    try {
+      const updated = await storage.updatePaymentPromise(Number(req.params.id), req.body);
+      if (!updated) return res.status(404).json({ message: "Promesa no encontrada" });
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Error al actualizar promesa" }); }
+  });
+
+  app.delete("/api/payment-promises/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deletePaymentPromise(Number(req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Error al eliminar promesa" }); }
+  });
+
+  // ─── MESSAGE TEMPLATES ────────────────────────────────────────────────────
+  app.get("/api/message-templates", isAuthenticated, async (_req, res) => {
+    try {
+      const templates = await storage.getMessageTemplates();
+      res.json(templates);
+    } catch { res.status(500).json({ message: "Error al obtener plantillas" }); }
+  });
+
+  app.post("/api/message-templates", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const template = await storage.createMessageTemplate({ ...req.body, createdById: user.id });
+      res.json(template);
+    } catch (e: any) { res.status(500).json({ message: e.message }); }
+  });
+
+  app.patch("/api/message-templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      const updated = await storage.updateMessageTemplate(Number(req.params.id), req.body);
+      if (!updated) return res.status(404).json({ message: "Plantilla no encontrada" });
+      res.json(updated);
+    } catch { res.status(500).json({ message: "Error al actualizar plantilla" }); }
+  });
+
+  app.delete("/api/message-templates/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteMessageTemplate(Number(req.params.id));
+      res.json({ ok: true });
+    } catch { res.status(500).json({ message: "Error al eliminar plantilla" }); }
+  });
+
+  // ─── PENDING FOLLOW-UPS ───────────────────────────────────────────────────
+  app.get("/api/followups/pending", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const userId = req.query.mine === "true" ? user.id : undefined;
+      const followups = await storage.getPendingFollowups(userId);
+      res.json(followups);
+    } catch { res.status(500).json({ message: "Error al obtener seguimientos" }); }
+  });
+
   return httpServer;
 }

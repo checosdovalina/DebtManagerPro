@@ -19,6 +19,7 @@ import ManagementPage from "@/pages/management/index";
 import CalculadoraPage from "@/pages/calculadora";
 import ImportacionPage from "@/pages/importacion";
 import ReportesPage from "@/pages/reportes";
+import SeguimientosPage from "@/pages/seguimientos";
 import { ProtectedRoute } from "./lib/auth";
 
 function Router() {
@@ -131,6 +132,12 @@ function Router() {
       <Route path="/reportes">
         <ProtectedRoute>
           <ReportesPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/seguimientos">
+        <ProtectedRoute>
+          <SeguimientosPage />
         </ProtectedRoute>
       </Route>
       

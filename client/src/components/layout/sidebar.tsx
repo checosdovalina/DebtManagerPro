@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Building2, Users, ClipboardList, BarChart,
   FileText, Settings, LogOut, ChevronDown, ChevronUp, Gavel,
-  UserCheck, List, Menu, X, Wallet, Calculator, Bell, Shield
+  UserCheck, List, Menu, X, Wallet, Calculator, Bell, Shield, AlarmClock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -160,6 +160,11 @@ export const Sidebar: React.FC = () => {
             <NavItem href="/management" label="Gestión y Seguimiento"
               icon={<ClipboardList className="h-5 w-5" />}
               isActive={location.startsWith("/management")}
+              onClick={closeMobile} />
+
+            <NavItem href="/seguimientos" label="Seguimientos Pendientes"
+              icon={<AlarmClock className="h-5 w-5" />}
+              isActive={location === "/seguimientos"}
               onClick={closeMobile} />
 
             <NavItem href="/reports/analytics" label="Reportes"
