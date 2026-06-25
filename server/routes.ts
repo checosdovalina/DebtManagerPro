@@ -1332,6 +1332,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.status(500).json({ message: "Error al eliminar plantilla" }); }
   });
 
+  // ─── IMPORT EXPEDIENTE DCS (formato Marelli / un archivo por deudor) ────
+  app.post("/api/import/expediente", isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const today = new Date().toISOString().split("T")[0];
+
+      const {
+        clientId,
+        debtorData,
+        debts = [],
+        payments = [],
+        activityLogs = [],
+        visits = [],
+      } = req.body as {
+        clientId: number;
+        debtorData: {
+          name: string;
+          phone?: string;
+          address?: string;
+          contact?: string;
+          notes?: string;
+          fechaAlta?: string;
+        };
+        debts: { concept: string; originalAmount: number; currentBalance: number }[];
+        payments: { paymentNumber: number; amount: number; date: string; newBalance: number; debtConcept: string }[];
+        activityLogs: { date: string; time: string; comment: string; promise: string }[];
+        visits: { reportNumber: string; date: string; content: string; commitment: string; nextReport: string }[];
+      };
+
+      if (!clientId || !debtorData?.name) {
+        return res.status(400).json({ message: "clientId y nombre del deudor son requeridos" });
+      }
+
+      const client = await storage.getClient(clientId);
+      if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
+
+      // Parse address into street
+      const debtorAddress = debtorData.address || "";
+
+      // Create debtor
+      const debtor = await storage.createDebtor({
+        name: debtorData.name,
+        rfc: null,
+        curp: null,
+        personType: "company" as const,
+        street: debtorAddress,
+        number: null,
+        colony: null,
+        zipCode: null,
+        city: null,
+        state: null,
+        phone: debtorData.phone || null,
+        email: null,
+        contactName: debtorData.contact || null,
+        clientId,
+        assignedUserId: userId,
+        status: "new" as const,
+        notes: debtorData.notes || null,
+      });
+
+      // Create debts and track concept→id mapping
+      let debtsCreated = 0;
+      const debtIdByConceptMap: Map<string, number> = new Map();
+
+      for (const d of debts) {
+        if (!d.concept || !d.originalAmount) continue;
+        const startDate = debtorData.fechaAlta || today;
+        const createdDebt = await storage.createDebt({
+          debtorId: debtor.id,
+          concept: d.concept,
+          originalAmount: d.originalAmount,
+          currentAmount: d.currentBalance ?? d.originalAmount,
+          startDate,
+          dueDate: today,
+          interest: null,
+          debtType: "invoice" as const,
+          supportDocuments: null,
+          notes: null,
+        });
+        debtIdByConceptMap.set(d.concept, createdDebt.id);
+        debtsCreated++;
+      }
+
+      // Create payments (abonos)
+      let paymentsCreated = 0;
+      for (const p of payments) {
+        if (!p.amount || !p.date) continue;
+        const debtId = debtIdByConceptMap.get(p.debtConcept);
+        if (!debtId) continue;
+        try {
+          await storage.createPayment({
+            debtId,
+            amount: p.amount,
+            paymentDate: p.date,
+            paymentMethod: "transfer" as const,
+            reference: `Abono #${p.paymentNumber}`,
+            notes: `Importado desde expediente. Saldo nuevo: ${p.newBalance}`,
+            receiptUrl: null,
+            registeredById: userId,
+          });
+          paymentsCreated++;
+        } catch (_) {}
+      }
+
+      // Create activity log entries from bitácora
+      let activityLogsCreated = 0;
+      for (const a of activityLogs) {
+        if (!a.comment) continue;
+        const logDate = a.date || today;
+        try {
+          await storage.createActivityLog({
+            debtorId: debtor.id,
+            userId,
+            date: logDate,
+            time: a.time || "00:00",
+            contactType: "phone" as const,
+            result: "other" as const,
+            comments: a.comment,
+            nextAction: a.promise || null,
+            nextActionDate: null,
+          });
+          activityLogsCreated++;
+        } catch (_) {}
+      }
+
+      // Create visits
+      let visitsCreated = 0;
+      for (const v of visits) {
+        if (!v.content) continue;
+        const visitDate = v.date || today;
+        try {
+          await storage.createVisit({
+            debtorId: debtor.id,
+            userId,
+            date: visitDate,
+            time: "00:00",
+            address: debtorAddress || "Sin dirección",
+            result: v.content,
+            personContacted: null,
+            evidence: null,
+            notes: [v.commitment, v.nextReport].filter(Boolean).join(" | ") || null,
+            nextVisitDate: null,
+          });
+          visitsCreated++;
+        } catch (_) {}
+      }
+
+      await storage.createNotification({
+        userId,
+        type: "system",
+        title: "Expediente importado",
+        message: `Se importó el expediente de "${debtor.name}" con ${debtsCreated} adeudo(s).`,
+        read: false,
+        entityType: "debtor",
+        entityId: debtor.id,
+      });
+
+      res.json({
+        debtorId: debtor.id,
+        debtsCreated,
+        paymentsCreated,
+        activityLogsCreated,
+        visitsCreated,
+      });
+    } catch (err: any) {
+      console.error("import/expediente error:", err);
+      res.status(500).json({ message: err.message || "Error al importar expediente" });
+    }
+  });
+
   // ─── BULK IMPORT ─────────────────────────────────────────────────────────
   app.post("/api/import/debtors", isAuthenticated, async (req, res) => {
     try {
