@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session
   app.use(
     session({
-      secret: "dcs-secret-key-2024",
+      secret: process.env.SESSION_SECRET || "dcs-secret-key-2024",
       resave: true,
       saveUninitialized: true,
       store: new SessionStore({ 
