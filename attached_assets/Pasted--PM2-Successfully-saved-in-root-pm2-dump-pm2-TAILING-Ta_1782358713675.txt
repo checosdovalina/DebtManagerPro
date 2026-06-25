@@ -1,0 +1,65 @@
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[TAILING] Tailing last 15 lines for [dcs] process (change the value with --lines option)
+/root/.pm2/logs/dcs-out.log last 15 lines:
+/root/.pm2/logs/dcs-error.log last 15 lines:
+19|dcs     | Error: DATABASE_URL must be set. Did you forget to provision a database?
+19|dcs     |     at file:///var/www/dcs/dist/index.js:363:9
+19|dcs     |     at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+19|dcs     |     at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+
+19|dcs  | Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+19|dcs  |     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+19|dcs  |     at listenInCluster (node:net:1965:12)
+19|dcs  |     at doListen (node:net:2139:7)
+19|dcs  |     at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+19|dcs  |   code: 'EADDRINUSE',
+19|dcs  |   errno: -98,
+19|dcs  |   syscall: 'listen',
+19|dcs  |   address: '0.0.0.0',
+19|dcs  |   port: 5000
+19|dcs  | }
+19|dcs  | Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+19|dcs  |     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+19|dcs  |     at listenInCluster (node:net:1965:12)
+19|dcs  |     at doListen (node:net:2139:7)
+19|dcs  |     at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+19|dcs  |   code: 'EADDRINUSE',
+19|dcs  |   errno: -98,
+19|dcs  |   syscall: 'listen',
+19|dcs  |   address: '0.0.0.0',
+19|dcs  |   port: 5000
+19|dcs  | }
+19|dcs  | Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+19|dcs  |     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+19|dcs  |     at listenInCluster (node:net:1965:12)
+19|dcs  |     at doListen (node:net:2139:7)
+19|dcs  |     at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+19|dcs  |   code: 'EADDRINUSE',
+19|dcs  |   errno: -98,
+19|dcs  |   syscall: 'listen',
+19|dcs  |   address: '0.0.0.0',
+19|dcs  |   port: 5000
+19|dcs  | }
+19|dcs  | Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+19|dcs  |     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+19|dcs  |     at listenInCluster (node:net:1965:12)
+19|dcs  |     at doListen (node:net:2139:7)
+19|dcs  |     at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+19|dcs  |   code: 'EADDRINUSE',
+19|dcs  |   errno: -98,
+19|dcs  |   syscall: 'listen',
+19|dcs  |   address: '0.0.0.0',
+19|dcs  |   port: 5000
+19|dcs  | }
+19|dcs  | Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+19|dcs  |     at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+19|dcs  |     at listenInCluster (node:net:1965:12)
+19|dcs  |     at doListen (node:net:2139:7)
+19|dcs  |     at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+19|dcs  |   code: 'EADDRINUSE',
+19|dcs  |   errno: -98,
+19|dcs  |   syscall: 'listen',
+19|dcs  |   address: '0.0.0.0',
+19|dcs  |   port: 5000
+19|dcs  | }
+1
