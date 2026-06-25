@@ -1332,6 +1332,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch { res.status(500).json({ message: "Error al eliminar plantilla" }); }
   });
 
+  // ─── BULK IMPORT ─────────────────────────────────────────────────────────
+  app.post("/api/import/debtors", isAuthenticated, async (req, res) => {
+    try {
+      const { clientId, rows } = req.body as { clientId: number; rows: Record<string, string>[] };
+      if (!clientId || !Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ message: "clientId y rows son requeridos" });
+      }
+
+      const client = await storage.getClient(clientId);
+      if (!client) return res.status(404).json({ message: "Cliente no encontrado" });
+
+      const today = new Date().toISOString().split("T")[0];
+      let imported = 0;
+      const errors: { row: number; error: string }[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        try {
+          const name = r["name"] || r["Nombre"] || r["NOMBRE"] || "";
+          if (!name) { errors.push({ row: i + 2, error: "Nombre requerido" }); continue; }
+
+          const debtorData = {
+            name,
+            rfc: r["rfc"] || r["RFC"] || null,
+            curp: null,
+            personType: "individual" as const,
+            street: r["street"] || r["Calle"] || null,
+            number: null,
+            colony: r["colony"] || r["Colonia"] || null,
+            zipCode: r["zipCode"] || r["Código Postal"] || r["Codigo Postal"] || null,
+            city: r["city"] || r["Ciudad"] || null,
+            state: r["state"] || r["Estado"] || null,
+            phone: r["phone"] || r["Teléfono"] || r["Telefono"] || null,
+            email: r["email"] || r["Email"] || null,
+            contactName: null,
+            clientId,
+            assignedUserId: null,
+            status: "new" as const,
+            notes: null,
+          };
+
+          const debtor = await storage.createDebtor(debtorData);
+
+          const amountRaw = r["originalAmount"] || r["Monto Original"] || r["Monto"] || "0";
+          const amount = parseFloat(String(amountRaw).replace(/[,$]/g, "")) || 0;
+          const dueDate = r["dueDate"] || r["Fecha Vencimiento"] || today;
+          const startDate = r["startDate"] || r["Fecha Inicio"] || today;
+          const concept = r["concept"] || r["Concepto"] || "Adeudo importado";
+
+          await storage.createDebt({
+            debtorId: debtor.id,
+            concept,
+            originalAmount: amount,
+            currentAmount: amount,
+            startDate,
+            dueDate,
+            interest: null,
+            debtType: "other" as const,
+            supportDocuments: null,
+            notes: null,
+          });
+
+          imported++;
+        } catch (err: any) {
+          errors.push({ row: i + 2, error: String(err?.message || "Error desconocido") });
+        }
+      }
+
+      res.json({ imported, errors, total: rows.length });
+    } catch (err) {
+      console.error("import/debtors error:", err);
+      res.status(500).json({ message: "Error en importación de deudores" });
+    }
+  });
+
+  app.post("/api/import/clients", isAuthenticated, async (req, res) => {
+    try {
+      const { rows } = req.body as { rows: Record<string, string>[] };
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ message: "rows es requerido" });
+      }
+
+      let imported = 0;
+      const errors: { row: number; error: string }[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        try {
+          const name = r["name"] || r["Nombre"] || r["NOMBRE"] || r["Razón Social"] || r["Razon Social"] || "";
+          const rfc = r["rfc"] || r["RFC"] || "";
+          if (!name) { errors.push({ row: i + 2, error: "Nombre requerido" }); continue; }
+          if (!rfc) { errors.push({ row: i + 2, error: "RFC requerido" }); continue; }
+
+          const personTypeRaw = (r["personType"] || r["Tipo"] || r["Tipo Persona"] || "individual").toLowerCase();
+          const personType = personTypeRaw.includes("moral") || personTypeRaw.includes("empresa") || personTypeRaw.includes("company")
+            ? "company" as const
+            : "individual" as const;
+
+          await storage.createClient({
+            name,
+            rfc,
+            curp: r["curp"] || r["CURP"] || null,
+            personType,
+            street: r["street"] || r["Calle"] || null,
+            number: null,
+            colony: r["colony"] || r["Colonia"] || null,
+            zipCode: r["zipCode"] || r["Código Postal"] || r["Codigo Postal"] || null,
+            city: r["city"] || r["Ciudad"] || null,
+            state: r["state"] || r["Estado"] || null,
+            phone: r["phone"] || r["Teléfono"] || r["Telefono"] || null,
+            email: r["email"] || r["Email"] || null,
+            legalRepresentative: r["legalRepresentative"] || r["Representante Legal"] || null,
+            businessType: r["businessType"] || r["Giro"] || r["Giro Comercial"] || null,
+            executiveId: null,
+            status: "active" as const,
+            notes: r["notes"] || r["Notas"] || null,
+          });
+
+          imported++;
+        } catch (err: any) {
+          errors.push({ row: i + 2, error: String(err?.message || "Error desconocido") });
+        }
+      }
+
+      res.json({ imported, errors, total: rows.length });
+    } catch (err) {
+      console.error("import/clients error:", err);
+      res.status(500).json({ message: "Error en importación de clientes" });
+    }
+  });
+
   // ─── ACTIVITIES LOGS (management module) ─────────────────────────────────
   app.get("/api/activities/logs", isAuthenticated, async (req, res) => {
     try {
