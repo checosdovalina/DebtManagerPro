@@ -1276,7 +1276,7 @@ export class MemStorage implements IStorage {
 }
 
 import { db } from './db';
-import { eq, desc, count, sum, gte } from 'drizzle-orm';
+import { eq, desc, count, sum, gte, and } from 'drizzle-orm';
 
 
 export class DatabaseStorage implements IStorage {
@@ -1959,32 +1959,82 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(debts);
   }
 
-  async getNotifications(_userId: number): Promise<Notification[]> { return []; }
-  async getUnreadNotificationsCount(_userId: number): Promise<number> { return 0; }
-  async createNotification(n: InsertNotification): Promise<Notification> { throw new Error("Not implemented"); }
-  async markNotificationRead(_id: number): Promise<Notification | undefined> { return undefined; }
-  async markAllNotificationsRead(_userId: number): Promise<void> {}
-  async deleteNotification(_id: number): Promise<boolean> { return false; }
-  async bulkCreateDebtors(_list: InsertDebtor[]): Promise<Debtor[]> { return []; }
-  async bulkCreateDebts(_list: InsertDebt[]): Promise<Debt[]> { return []; }
+  async getNotifications(userId: number): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId)).orderBy(desc(notifications.createdAt));
+  }
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    const [row] = await db.select({ cnt: count() }).from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+    return row?.cnt ?? 0;
+  }
+  async createNotification(n: InsertNotification): Promise<Notification> {
+    const [created] = await db.insert(notifications).values(n).returning();
+    return created;
+  }
+  async markNotificationRead(id: number): Promise<Notification | undefined> {
+    const [updated] = await db.update(notifications).set({ read: true }).where(eq(notifications.id, id)).returning();
+    return updated;
+  }
+  async markAllNotificationsRead(userId: number): Promise<void> {
+    await db.update(notifications).set({ read: true }).where(eq(notifications.userId, userId));
+  }
+  async deleteNotification(id: number): Promise<boolean> {
+    const result = await db.delete(notifications).where(eq(notifications.id, id)).returning();
+    return result.length > 0;
+  }
+  async bulkCreateDebtors(list: InsertDebtor[]): Promise<Debtor[]> {
+    if (list.length === 0) return [];
+    return await db.insert(debtors).values(list).returning();
+  }
+  async bulkCreateDebts(list: InsertDebt[]): Promise<Debt[]> {
+    if (list.length === 0) return [];
+    return await db.insert(debts).values(list).returning();
+  }
 
-  // Payment Promises (stubs — DB implementation pending)
-  async getPaymentPromisesByDebtor(_debtorId: number): Promise<PaymentPromise[]> { return []; }
-  async getAllPendingPromises(): Promise<PaymentPromise[]> { return []; }
-  async createPaymentPromise(_promise: InsertPaymentPromise): Promise<PaymentPromise> { throw new Error("Not implemented"); }
-  async updatePaymentPromise(_id: number, _data: Partial<PaymentPromise>): Promise<PaymentPromise | undefined> { return undefined; }
-  async deletePaymentPromise(_id: number): Promise<boolean> { return false; }
+  // Payment Promises
+  async getPaymentPromisesByDebtor(debtorId: number): Promise<PaymentPromise[]> {
+    return await db.select().from(paymentPromises).where(eq(paymentPromises.debtorId, debtorId)).orderBy(desc(paymentPromises.createdAt));
+  }
+  async getAllPendingPromises(): Promise<PaymentPromise[]> {
+    return await db.select().from(paymentPromises).where(eq(paymentPromises.status, "pending")).orderBy(paymentPromises.promisedDate);
+  }
+  async createPaymentPromise(promise: InsertPaymentPromise): Promise<PaymentPromise> {
+    const [created] = await db.insert(paymentPromises).values(promise).returning();
+    return created;
+  }
+  async updatePaymentPromise(id: number, data: Partial<PaymentPromise>): Promise<PaymentPromise | undefined> {
+    const [updated] = await db.update(paymentPromises).set({ ...data, updatedAt: new Date() }).where(eq(paymentPromises.id, id)).returning();
+    return updated;
+  }
+  async deletePaymentPromise(id: number): Promise<boolean> {
+    const result = await db.delete(paymentPromises).where(eq(paymentPromises.id, id)).returning();
+    return result.length > 0;
+  }
 
-  // Message Templates (stubs — DB implementation pending)
-  async getMessageTemplates(): Promise<MessageTemplate[]> { return []; }
-  async createMessageTemplate(_template: InsertMessageTemplate): Promise<MessageTemplate> { throw new Error("Not implemented"); }
-  async updateMessageTemplate(_id: number, _data: Partial<MessageTemplate>): Promise<MessageTemplate | undefined> { return undefined; }
-  async deleteMessageTemplate(_id: number): Promise<boolean> { return false; }
+  // Message Templates
+  async getMessageTemplates(): Promise<MessageTemplate[]> {
+    return await db.select().from(messageTemplates).orderBy(messageTemplates.name);
+  }
+  async createMessageTemplate(template: InsertMessageTemplate): Promise<MessageTemplate> {
+    const [created] = await db.insert(messageTemplates).values(template).returning();
+    return created;
+  }
+  async updateMessageTemplate(id: number, data: Partial<MessageTemplate>): Promise<MessageTemplate | undefined> {
+    const [updated] = await db.update(messageTemplates).set(data).where(eq(messageTemplates.id, id)).returning();
+    return updated;
+  }
+  async deleteMessageTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(messageTemplates).where(eq(messageTemplates.id, id)).returning();
+    return result.length > 0;
+  }
 
-  // Pending Follow-ups (stub — DB implementation pending)
-  async getPendingFollowups(_userId?: number): Promise<any[]> { return []; }
+  // Pending Follow-ups
+  async getPendingFollowups(userId?: number): Promise<any[]> {
+    const query = db.select().from(activityLogs).where(
+      userId ? and(eq(activityLogs.userId, userId), eq(activityLogs.followUpRequired, true)) : eq(activityLogs.followUpRequired, true)
+    ).orderBy(activityLogs.followUpDate);
+    return await query;
+  }
 }
 
-// Usar MemStorage para el desarrollo/pruebas hasta que la base de datos esté completamente configurada
-export const storage = new MemStorage();
-// export const storage = new DatabaseStorage();
+// Usar DatabaseStorage cuando DATABASE_URL está disponible (dev con Replit DB, producción VPS)
+export const storage: IStorage = process.env.DATABASE_URL ? new DatabaseStorage() : new MemStorage();

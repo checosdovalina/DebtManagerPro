@@ -1,0 +1,2 @@
+- [Storage switch to DatabaseStorage](storage-database-switch.md) — storage was hardcoded to MemStorage; now environment-aware via DATABASE_URL check.
+- [DatabaseStorage stubs](database-storage-stubs.md) — createNotification and other methods were stubs/throws; all implemented with drizzle queries.

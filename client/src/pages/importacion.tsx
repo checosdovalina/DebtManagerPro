@@ -422,13 +422,16 @@ export default function ImportacionPage() {
 
   // ── Expediente import mutation ──────────────────────────────────────────────
   const expedienteMutation = useMutation({
-    mutationFn: async (payload: any) => apiRequest("POST", "/api/import/expediente", payload),
+    mutationFn: async (payload: any) => {
+      const res = await apiRequest("POST", "/api/import/expediente", payload);
+      return res.json();
+    },
     onSuccess: (data: any) => {
       invalidateDebtorsAndClients();
       setExpedienteResult(data);
       setExpedienteStep(3);
       const clientMsg = data.clientCreated ? " · Cliente creado automáticamente." : "";
-      toast({ title: "Expediente importado", description: `Deudor "${expediente?.debtorName}" creado con ${data.debtsCreated} adeudo(s).${clientMsg}` });
+      toast({ title: "Expediente importado", description: `Deudor "${expediente?.debtorName}" creado con ${data.debtsCreated ?? 0} adeudo(s).${clientMsg}` });
     },
     onError: (e: any) => {
       toast({ title: "Error al importar", description: e?.message || "No se pudo importar el expediente.", variant: "destructive" });
@@ -440,13 +443,14 @@ export default function ImportacionPage() {
     mutationFn: async (payload: { type: "debtors" | "clients"; clientId?: number; rows: ImportRow[] }) => {
       const endpoint = payload.type === "debtors" ? "/api/import/debtors" : "/api/import/clients";
       const body = payload.type === "debtors" ? { clientId: payload.clientId, rows: payload.rows } : { rows: payload.rows };
-      return apiRequest("POST", endpoint, body);
+      const res = await apiRequest("POST", endpoint, body);
+      return res.json();
     },
     onSuccess: (data: any) => {
       invalidateDebtorsAndClients();
       setImportResult(data as ImportResult);
       setLegacyStep(3);
-      toast({ title: "Importación completada", description: `${data.imported} registros importados.` });
+      toast({ title: "Importación completada", description: `${data.imported ?? 0} registros importados.` });
     },
     onError: () => {
       toast({ title: "Error en importación", description: "No se pudo completar la importación.", variant: "destructive" });

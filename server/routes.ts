@@ -1269,6 +1269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = (req.user as any).id;
       const today = new Date().toISOString().split("T")[0];
+      console.log(`[import/expediente] START body keys: ${Object.keys(req.body).join(",")}`);
 
       const {
         clientId: rawClientId,
