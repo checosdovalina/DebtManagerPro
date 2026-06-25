@@ -406,12 +406,25 @@ export default function ImportacionPage() {
 
   const { data: clients = [] } = useQuery<Client[]>({ queryKey: ["/api/clients"] });
 
+  // Invalida TODAS las queries de deudores y clientes, incluyendo las que
+  // tienen filtros en el query string (ej. "/api/debtors?clientId=1")
+  function invalidateDebtorsAndClients() {
+    queryClient.invalidateQueries({
+      predicate: (q) => String(q.queryKey[0]).startsWith("/api/debtors"),
+    });
+    queryClient.invalidateQueries({
+      predicate: (q) => String(q.queryKey[0]).startsWith("/api/clients"),
+    });
+    queryClient.invalidateQueries({
+      predicate: (q) => String(q.queryKey[0]).startsWith("/api/dashboard"),
+    });
+  }
+
   // ── Expediente import mutation ──────────────────────────────────────────────
   const expedienteMutation = useMutation({
     mutationFn: async (payload: any) => apiRequest("POST", "/api/import/expediente", payload),
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/debtors"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      invalidateDebtorsAndClients();
       setExpedienteResult(data);
       setExpedienteStep(3);
       const clientMsg = data.clientCreated ? " · Cliente creado automáticamente." : "";
@@ -430,8 +443,7 @@ export default function ImportacionPage() {
       return apiRequest("POST", endpoint, body);
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/debtors"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      invalidateDebtorsAndClients();
       setImportResult(data as ImportResult);
       setLegacyStep(3);
       toast({ title: "Importación completada", description: `${data.imported} registros importados.` });
