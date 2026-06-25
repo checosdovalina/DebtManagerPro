@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Card, 
   CardContent, 
@@ -14,6 +17,30 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter as DialogFooterUI,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/common/avatar";
 import { Breadcrumb } from "@/components/common/breadcrumb";
@@ -27,6 +54,39 @@ import { PaymentPromises } from "./payment-promises";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+// ── Form schemas ──────────────────────────────────────────────────────────────
+const visitSchema = z.object({
+  date: z.string().nonempty("Fecha requerida"),
+  time: z.string().nonempty("Hora requerida"),
+  address: z.string().nonempty("Dirección requerida"),
+  result: z.string().default("programada"),
+  personContacted: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+const litigationSchema = z.object({
+  startDate: z.string().nonempty("Fecha requerida"),
+  processType: z.string().nonempty("Tipo de proceso requerido"),
+  caseNumber: z.string().optional(),
+  court: z.string().optional(),
+  status: z.string().default("active"),
+});
+
+const reportSchema = z.object({
+  reportDate: z.string().nonempty("Fecha requerida"),
+  periodStart: z.string().nonempty("Inicio de período requerido"),
+  periodEnd: z.string().nonempty("Fin de período requerido"),
+  summary: z.string().min(10, "El resumen debe tener al menos 10 caracteres"),
+  recommendations: z.string().optional(),
+  status: z.string().default("draft"),
+});
+
+type VisitForm = z.infer<typeof visitSchema>;
+type LitigationForm = z.infer<typeof litigationSchema>;
+type ReportForm = z.infer<typeof reportSchema>;
 
 interface DebtorDetailProps {
   debtorId: number;
@@ -39,6 +99,62 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
 }) => {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState(initialTab);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Dialog open states
+  const [visitOpen, setVisitOpen] = useState(false);
+  const [litigationOpen, setLitigationOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Forms
+  const visitForm = useForm<VisitForm>({
+    resolver: zodResolver(visitSchema),
+    defaultValues: { date: "", time: "", address: "", result: "programada", personContacted: "", notes: "" },
+  });
+  const litigationForm = useForm<LitigationForm>({
+    resolver: zodResolver(litigationSchema),
+    defaultValues: { startDate: "", processType: "", caseNumber: "", court: "", status: "active" },
+  });
+  const reportForm = useForm<ReportForm>({
+    resolver: zodResolver(reportSchema),
+    defaultValues: { reportDate: "", periodStart: "", periodEnd: "", summary: "", recommendations: "", status: "draft" },
+  });
+
+  // Mutations
+  const createVisitMutation = useMutation({
+    mutationFn: (data: VisitForm) => apiRequest("POST", `/api/debtors/${debtorId}/visits`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/debtors/${debtorId}/visits`] });
+      toast({ title: "Visita programada", description: "La visita fue registrada correctamente." });
+      setVisitOpen(false);
+      visitForm.reset();
+    },
+    onError: () => toast({ title: "Error", description: "No se pudo programar la visita.", variant: "destructive" }),
+  });
+
+  const createLitigationMutation = useMutation({
+    mutationFn: (data: LitigationForm) => apiRequest("POST", `/api/debtors/${debtorId}/litigation`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/debtors/${debtorId}/litigation`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/debtors/${debtorId}`] });
+      toast({ title: "Proceso iniciado", description: "El proceso judicial fue registrado." });
+      setLitigationOpen(false);
+      litigationForm.reset();
+    },
+    onError: () => toast({ title: "Error", description: "No se pudo iniciar el proceso.", variant: "destructive" }),
+  });
+
+  const createReportMutation = useMutation({
+    mutationFn: (data: ReportForm) => apiRequest("POST", `/api/debtors/${debtorId}/reports`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/debtors/${debtorId}/reports`] });
+      toast({ title: "Reporte generado", description: "El reporte fue creado correctamente." });
+      setReportOpen(false);
+      reportForm.reset();
+    },
+    onError: () => toast({ title: "Error", description: "No se pudo generar el reporte.", variant: "destructive" }),
+  });
 
   const { data: debtor, isLoading: isDebtorLoading } = useQuery<Debtor>({
     queryKey: [`/api/debtors/${debtorId}`],
@@ -382,7 +498,7 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                 <p className="mt-1 text-sm text-gray-500">
                   No hay reportes generados para este deudor.
                 </p>
-                <Button className="mt-4">
+                <Button className="mt-4" onClick={() => setReportOpen(true)} data-testid="btn-new-report">
                   <FileText className="h-4 w-4 mr-2" />
                   Generar nuevo reporte
                 </Button>
@@ -398,7 +514,7 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                 <p className="mt-1 text-sm text-gray-500">
                   No hay visitas registradas para este deudor.
                 </p>
-                <Button className="mt-4">
+                <Button className="mt-4" onClick={() => setVisitOpen(true)} data-testid="btn-schedule-visit">
                   <CalendarDays className="h-4 w-4 mr-2" />
                   Programar visita
                 </Button>
@@ -420,7 +536,6 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                     </div>
                   </div>
                 </div>
-                
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Detalles del proceso judicial</CardTitle>
@@ -440,7 +555,7 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
                   <p className="mt-1 text-sm text-gray-500">
                     Este deudor no tiene procesos judiciales activos.
                   </p>
-                  <Button className="mt-4">
+                  <Button className="mt-4" onClick={() => setLitigationOpen(true)} data-testid="btn-start-litigation">
                     <Gavel className="h-4 w-4 mr-2" />
                     Iniciar proceso judicial
                   </Button>
@@ -474,6 +589,182 @@ export const DebtorDetail: React.FC<DebtorDetailProps> = ({
           </TabsContent>
         </Tabs>
       </Card>
+
+      {/* ── Dialog: Programar Visita ────────────────────────────────────── */}
+      <Dialog open={visitOpen} onOpenChange={setVisitOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Programar Visita</DialogTitle>
+          </DialogHeader>
+          <Form {...visitForm}>
+            <form onSubmit={visitForm.handleSubmit((d) => createVisitMutation.mutate(d))} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={visitForm.control} name="date" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha</FormLabel>
+                    <FormControl><Input type="date" {...field} data-testid="input-visit-date" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={visitForm.control} name="time" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hora</FormLabel>
+                    <FormControl><Input type="time" {...field} data-testid="input-visit-time" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={visitForm.control} name="address" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dirección</FormLabel>
+                  <FormControl><Input placeholder="Calle, número, colonia, ciudad" {...field} data-testid="input-visit-address" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={visitForm.control} name="personContacted" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Persona a contactar (opcional)</FormLabel>
+                  <FormControl><Input placeholder="Nombre de la persona" {...field} data-testid="input-visit-person" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={visitForm.control} name="notes" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas (opcional)</FormLabel>
+                  <FormControl><Textarea placeholder="Observaciones adicionales" className="min-h-[80px]" {...field} data-testid="input-visit-notes" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <DialogFooterUI>
+                <Button type="button" variant="outline" onClick={() => setVisitOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={createVisitMutation.isPending} data-testid="btn-submit-visit">
+                  {createVisitMutation.isPending ? "Guardando..." : "Programar visita"}
+                </Button>
+              </DialogFooterUI>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Iniciar Proceso Judicial ───────────────────────────── */}
+      <Dialog open={litigationOpen} onOpenChange={setLitigationOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Iniciar Proceso Judicial</DialogTitle>
+          </DialogHeader>
+          <Form {...litigationForm}>
+            <form onSubmit={litigationForm.handleSubmit((d) => createLitigationMutation.mutate(d))} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={litigationForm.control} name="startDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de inicio</FormLabel>
+                    <FormControl><Input type="date" {...field} data-testid="input-lit-date" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={litigationForm.control} name="processType" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de proceso</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-lit-type">
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="civil">Civil</SelectItem>
+                        <SelectItem value="mercantil">Mercantil</SelectItem>
+                        <SelectItem value="ejecutivo">Ejecutivo mercantil</SelectItem>
+                        <SelectItem value="ordinario">Ordinario</SelectItem>
+                        <SelectItem value="otro">Otro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={litigationForm.control} name="caseNumber" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número de expediente (opcional)</FormLabel>
+                    <FormControl><Input placeholder="Ej. 123/2024" {...field} data-testid="input-lit-case" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={litigationForm.control} name="court" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Juzgado / Tribunal (opcional)</FormLabel>
+                    <FormControl><Input placeholder="Nombre del juzgado" {...field} data-testid="input-lit-court" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <DialogFooterUI>
+                <Button type="button" variant="outline" onClick={() => setLitigationOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={createLitigationMutation.isPending} data-testid="btn-submit-litigation">
+                  {createLitigationMutation.isPending ? "Registrando..." : "Iniciar proceso"}
+                </Button>
+              </DialogFooterUI>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Dialog: Generar Reporte ─────────────────────────────────────── */}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Generar Reporte al Cliente</DialogTitle>
+          </DialogHeader>
+          <Form {...reportForm}>
+            <form onSubmit={reportForm.handleSubmit((d) => createReportMutation.mutate(d))} className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <FormField control={reportForm.control} name="reportDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha del reporte</FormLabel>
+                    <FormControl><Input type="date" {...field} data-testid="input-report-date" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={reportForm.control} name="periodStart" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Período inicio</FormLabel>
+                    <FormControl><Input type="date" {...field} data-testid="input-report-start" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={reportForm.control} name="periodEnd" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Período fin</FormLabel>
+                    <FormControl><Input type="date" {...field} data-testid="input-report-end" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <FormField control={reportForm.control} name="summary" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Resumen de gestiones</FormLabel>
+                  <FormControl><Textarea placeholder="Describe las gestiones realizadas en el período..." className="min-h-[100px]" {...field} data-testid="input-report-summary" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={reportForm.control} name="recommendations" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Recomendaciones (opcional)</FormLabel>
+                  <FormControl><Textarea placeholder="Recomendaciones para el cliente..." className="min-h-[80px]" {...field} data-testid="input-report-recommendations" /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <DialogFooterUI>
+                <Button type="button" variant="outline" onClick={() => setReportOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={createReportMutation.isPending} data-testid="btn-submit-report">
+                  {createReportMutation.isPending ? "Generando..." : "Generar reporte"}
+                </Button>
+              </DialogFooterUI>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

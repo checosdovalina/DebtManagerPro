@@ -805,6 +805,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/debtors/:debtorId/reports", isAuthenticated, async (req, res) => {
+    try {
+      const debtorId = parseInt(req.params.debtorId);
+      const debtor = await storage.getDebtor(debtorId);
+      if (!debtor) return res.status(404).json({ message: "Debtor not found" });
+      const currentUser = req.user as any;
+      const reportData = {
+        ...req.body,
+        debtorId,
+        clientId: debtor.clientId,
+        createdById: currentUser.id,
+      };
+      const validatedData = insertClientReportSchema.parse(reportData);
+      const report = await storage.createClientReport(validatedData);
+      res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Error creating report" });
+    }
+  });
+
   // Documents Routes
   app.get("/api/documents/:entityType/:entityId", isAuthenticated, async (req, res) => {
     try {
